@@ -142,7 +142,7 @@ export class StaticLookupFormatEditor extends DefaultFormatEditor<
     ];
 
     return (
-      <Fragment>
+      <Fragment key="staticLookupFormatEditor">
         <EuiBasicTable items={items} columns={columns} style={{ maxWidth: '400px' }} />
         <EuiSpacer size="m" />
         <EuiButton iconType="plusInCircle" size="s" onClick={this.addLookup}>

@@ -17,6 +17,11 @@ export default (props) => {
             queryFilters={[
                 {
                     "term": {
+                        "metadata.category": "elasticsearch"
+                    }
+                },
+                {
+                    "term": {
                         "metadata.labels.node_uuid": nodeID
                     }
                 }

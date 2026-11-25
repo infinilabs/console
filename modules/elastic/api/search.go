@@ -44,7 +44,7 @@ func (h *APIHandler) HandleCreateSearchTemplateAction(w http.ResponseWriter, req
 	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleCreateSearchTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -52,7 +52,7 @@ func (h *APIHandler) HandleCreateSearchTemplateAction(w http.ResponseWriter, req
 
 	if !exists {
 		resBody["error"] = fmt.Sprintf("cluster [%s] not found", targetClusterID)
-		log.Error(resBody["error"])
+		log.Errorf("HandleCreateSearchTemplateAction failed: %v", resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
 	}
@@ -61,7 +61,7 @@ func (h *APIHandler) HandleCreateSearchTemplateAction(w http.ResponseWriter, req
 
 	err = h.DecodeJSON(req, template)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleCreateSearchTemplateAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -77,7 +77,7 @@ func (h *APIHandler) HandleCreateSearchTemplateAction(w http.ResponseWriter, req
 	//fmt.Println(client)
 	err = client.SetSearchTemplate(template.Name, bodyBytes)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleCreateSearchTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -91,7 +91,7 @@ func (h *APIHandler) HandleCreateSearchTemplateAction(w http.ResponseWriter, req
 	index := orm.GetIndexName(elastic.SearchTemplate{})
 	insertRes, err := esClient.Index(index, "", id, template, "wait_for")
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleCreateSearchTemplateAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -110,7 +110,7 @@ func (h *APIHandler) HandleUpdateSearchTemplateAction(w http.ResponseWriter, req
 	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleUpdateSearchTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -118,7 +118,7 @@ func (h *APIHandler) HandleUpdateSearchTemplateAction(w http.ResponseWriter, req
 
 	if !exists {
 		resBody["error"] = fmt.Sprintf("cluster [%s] not found", targetClusterID)
-		log.Error(resBody["error"])
+		log.Errorf("HandleUpdateSearchTemplateAction failed: %v", resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
 	}
@@ -127,7 +127,7 @@ func (h *APIHandler) HandleUpdateSearchTemplateAction(w http.ResponseWriter, req
 
 	err = h.DecodeJSON(req, template)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleUpdateSearchTemplateAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -137,14 +137,14 @@ func (h *APIHandler) HandleUpdateSearchTemplateAction(w http.ResponseWriter, req
 	index := orm.GetIndexName(elastic.SearchTemplate{})
 	getRes, err := esClient.Get(index, "", templateID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleUpdateSearchTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
 	if getRes.Found == false {
 		resBody["error"] = fmt.Sprintf("template %s can not be found", templateID)
-		log.Error(resBody["error"])
+		log.Errorf("HandleUpdateSearchTemplateAction failed: %v", resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
 	}
@@ -157,7 +157,7 @@ func (h *APIHandler) HandleUpdateSearchTemplateAction(w http.ResponseWriter, req
 	if template.Name != "" && template.Name != targetName {
 		err = client.DeleteSearchTemplate(targetName)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("HandleUpdateSearchTemplateAction failed: %v", err)
 			resBody["error"] = err.Error()
 			h.WriteJSON(w, resBody, http.StatusInternalServerError)
 			return
@@ -178,7 +178,7 @@ func (h *APIHandler) HandleUpdateSearchTemplateAction(w http.ResponseWriter, req
 
 	err = client.SetSearchTemplate(targetName, bodyBytes)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleUpdateSearchTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -187,7 +187,7 @@ func (h *APIHandler) HandleUpdateSearchTemplateAction(w http.ResponseWriter, req
 	targetTemplate["updated"] = time.Now()
 	insertRes, err := esClient.Index(index, "", templateID, targetTemplate, "wait_for")
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleUpdateSearchTemplateAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -213,7 +213,7 @@ func (h *APIHandler) HandleDeleteSearchTemplateAction(w http.ResponseWriter, req
 	targetClusterID := ps.ByName("id")
 	exists, client, err := h.GetClusterClient(targetClusterID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteSearchTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -221,7 +221,7 @@ func (h *APIHandler) HandleDeleteSearchTemplateAction(w http.ResponseWriter, req
 
 	if !exists {
 		resBody["error"] = fmt.Sprintf("cluster [%s] not found", targetClusterID)
-		log.Error(resBody["error"])
+		log.Errorf("HandleDeleteSearchTemplateAction failed: %v", resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
 	}
@@ -232,7 +232,7 @@ func (h *APIHandler) HandleDeleteSearchTemplateAction(w http.ResponseWriter, req
 	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	res, err := esClient.Get(index, "", templateID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteSearchTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -240,14 +240,14 @@ func (h *APIHandler) HandleDeleteSearchTemplateAction(w http.ResponseWriter, req
 
 	err = client.DeleteSearchTemplate(res.Source["name"].(string))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteSearchTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
 	delRes, err := esClient.Delete(index, "", res.ID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteSearchTemplateAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -261,7 +261,7 @@ func (h *APIHandler) HandleDeleteSearchTemplateAction(w http.ResponseWriter, req
 	}
 	_, err = esClient.Index(orm.GetIndexName(ht), "", util.GetUUID(), ht, "wait_for")
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteSearchTemplateAction failed: %v", err)
 	}
 
 	resBody["_id"] = templateID
@@ -292,7 +292,7 @@ func (h *APIHandler) HandleSearchSearchTemplateAction(w http.ResponseWriter, req
 	res, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.SearchTemplate{}), []byte(queryDSL))
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleSearchSearchTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -308,7 +308,7 @@ func (h *APIHandler) HandleGetSearchTemplateAction(w http.ResponseWriter, req *h
 	indexName := orm.GetIndexName(elastic.SearchTemplate{})
 	getResponse, err := h.Client().Get(indexName, "", id)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleGetSearchTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		if getResponse != nil {
 			h.WriteJSON(w, resBody, getResponse.StatusCode)
@@ -342,7 +342,7 @@ func (h *APIHandler) HandleSearchSearchTemplateHistoryAction(w http.ResponseWrit
 	res, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.SearchTemplateHistory{}), []byte(queryDSL))
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleSearchSearchTemplateHistoryAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -356,7 +356,7 @@ func (h *APIHandler) HandleRenderTemplateAction(w http.ResponseWriter, req *http
 	targetClusterID := ps.ByName("id")
 	exists, client, err := h.GetClusterClient(targetClusterID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleRenderTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -364,14 +364,14 @@ func (h *APIHandler) HandleRenderTemplateAction(w http.ResponseWriter, req *http
 
 	if !exists {
 		resBody["error"] = fmt.Sprintf("cluster [%s] not found", targetClusterID)
-		log.Error(resBody["error"])
+		log.Errorf("HandleRenderTemplateAction failed: %v", resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
 	}
 	reqBody := map[string]interface{}{}
 	err = h.DecodeJSON(req, &reqBody)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleRenderTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -379,7 +379,7 @@ func (h *APIHandler) HandleRenderTemplateAction(w http.ResponseWriter, req *http
 	res, err := client.RenderTemplate(reqBody)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleRenderTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -393,7 +393,7 @@ func (h *APIHandler) HandleSearchTemplateAction(w http.ResponseWriter, req *http
 	targetClusterID := ps.ByName("id")
 	exists, client, err := h.GetClusterClient(targetClusterID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleSearchTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -401,14 +401,14 @@ func (h *APIHandler) HandleSearchTemplateAction(w http.ResponseWriter, req *http
 
 	if !exists {
 		resBody["error"] = fmt.Sprintf("cluster [%s] not found", targetClusterID)
-		log.Error(resBody["error"])
+		log.Errorf("HandleSearchTemplateAction failed: %v", resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
 	}
 	reqBody := map[string]interface{}{}
 	err = h.DecodeJSON(req, &reqBody)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleSearchTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -416,7 +416,7 @@ func (h *APIHandler) HandleSearchTemplateAction(w http.ResponseWriter, req *http
 	res, err := client.SearchTemplate(reqBody)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleSearchTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return

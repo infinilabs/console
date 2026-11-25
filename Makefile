@@ -4,11 +4,12 @@ SHELL=/bin/bash
 APP_NAME := console
 APP_VERSION := 1.0.0_SNAPSHOT
 APP_CONFIG := $(APP_NAME).yml
-APP_EOLDate ?= "2026-12-31T10:10:10Z"
+APP_EOLDate ?= "2027-12-31T10:10:10Z"
 APP_STATIC_FOLDER := .public
 APP_STATIC_PACKAGE := public
 APP_UI_FOLDER := ui
 APP_PLUGIN_FOLDER := plugin
+GOBUILD_FLAGS += -trimpath
 
 # easyjson -all domain.go
 include ../framework/Makefile
@@ -44,6 +45,16 @@ web-lint:
 	@echo "Running lint..."
 	@(cd web && npx eslint . --ext .js,.jsx,.ts,.tsx)
 	@echo "Linting complete."
+
+.PHONY: format format-ci
+format: format-ci
+
+format-ci:
+	@echo "formatting code"
+	@find . -type f -name '*.go' \
+		-not -path './vendor/*' \
+		-not -path './.git/*' \
+		-print0 | xargs -0 gofmt -w
 
 # Build the web app
 build-web:

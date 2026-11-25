@@ -11,6 +11,7 @@ import { Token } from "../../entities/token";
 import { TokensProvider } from "../../entities/tokens_provider";
 import { EditorEvent, AutoCompleterFunction } from "../../entities/core_editor";
 import { AceTokensProvider } from "../../entities/ace_tokens_providers";
+import { applyConsoleAceFont } from "../../utils/editor_font";
 import * as curl from "./curl";
 import smartResize from "./smart_resize";
 import createAutocompleter from "../../modules/autocomplete/autocomplete";
@@ -391,7 +392,7 @@ export class LegacyCoreEditor implements CoreEditor {
 
   setStyles(styles: { wrapLines: boolean; fontSize: string }) {
     this.editor.getSession().setUseWrapMode(styles.wrapLines);
-    this.editor.container.style.fontSize = styles.fontSize;
+    applyConsoleAceFont(this.editor, styles.fontSize);
   }
 
   registerKeyboardShortcut(opts: {

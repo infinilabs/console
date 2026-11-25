@@ -5,6 +5,7 @@ import hash from "hash.js";
 import { isAntdPro } from "./utils";
 import { formatMessage } from "umi/locale";
 import { getAuthorizationHeader } from "./authority";
+import { ensureFreshAccessToken } from "./auth_session";
 import * as uuid from 'uuid';
 
 export const formatResponse = (response) => {
@@ -31,6 +32,215 @@ export const formatResponse = (response) => {
   }
 }
 
+const secureTransportErrorReason =
+  "Sensitive requests require HTTPS. Enable Console HTTPS or put Console behind an HTTPS reverse proxy.";
+const ERROR_NOTIFICATION_DEDUPE_MS = 4000;
+const DATATOOLS_LICENSE_REQUIRED_REASON =
+  "a valid license is required to use DataTools";
+const DATATOOLS_LICENSE_MODAL_EVENT = "console:datatools-license-required";
+const DATATOOLS_LICENSE_MODAL_DEDUPE_MS = 3000;
+const recentErrorNotifications = new Map();
+let lastDataToolsLicenseModalAt = 0;
+
+const sensitiveRequestRules = [
+  { method: "POST", pattern: /^\/account\/login\/challenge$/ },
+  { method: "POST", pattern: /^\/account\/login$/ },
+  { method: "POST", pattern: /^\/account\/refresh$/ },
+  { method: "PUT", pattern: /^\/account\/password$/ },
+  { method: "POST", pattern: /^\/user$/ },
+  { method: "PUT", pattern: /^\/user\/[^/]+\/password$/ },
+  { method: "POST", pattern: /^\/credential$/ },
+  { method: "PUT", pattern: /^\/credential\/[^/]+$/ },
+  { method: "POST", pattern: /^\/setup\/_validate$/ },
+  { method: "POST", pattern: /^\/setup\/_initialize$/ },
+  { method: "POST", pattern: /^\/setup\/_validate_secret$/ },
+  { method: "POST", pattern: /^\/setup\/_initialize_template$/ },
+  { method: "POST", pattern: /^\/elasticsearch\/$/ },
+  { method: "PUT", pattern: /^\/elasticsearch\/[^/]+$/ },
+  { method: "POST", pattern: /^\/elasticsearch\/try_connect$/ },
+  { method: "POST", pattern: /^\/email\/server$/ },
+  { method: "POST", pattern: /^\/email\/server\/_test$/ },
+  { method: "PUT", pattern: /^\/email\/server\/[^/]+$/ },
+  { method: "PUT", pattern: /^\/setting\/system\/rollup$/ },
+  { method: "PUT", pattern: /^\/setting\/system\/retention$/ },
+  { method: "POST", pattern: /^\/setting\/system\/local_templates\/_refresh$/ },
+];
+
+const publicRequestRules = [
+  { method: "GET", pattern: /^\/setting\/application$/ },
+  { method: "GET", pattern: /^\/_info$/ },
+  { method: "GET", pattern: /^\/_license\/info$/ },
+  { method: "POST", pattern: /^\/account\/login\/challenge$/ },
+  { method: "POST", pattern: /^\/account\/login$/ },
+];
+
+const getNormalizedRequestPath = (requestUrl) => {
+  if (typeof window === "undefined") {
+    return requestUrl;
+  }
+
+  const resolvedUrl = new URL(requestUrl, window.location.origin);
+  let pathname = resolvedUrl.pathname;
+  const basePath =
+    window.routerBase && window.routerBase !== "/"
+      ? window.routerBase.replace(/\/$/, "")
+      : "";
+
+  if (basePath && pathname.startsWith(`${basePath}/`)) {
+    pathname = pathname.slice(basePath.length);
+  } else if (basePath && pathname === basePath) {
+    pathname = "/";
+  }
+
+  return pathname;
+};
+
+const requestUsesSecureTransport = (requestUrl) => {
+  if (typeof window === "undefined") {
+    return true;
+  }
+
+  return new URL(requestUrl, window.location.origin).protocol === "https:";
+};
+
+const getCurrentRoutePath = () => {
+  if (typeof window === "undefined") {
+    return "/";
+  }
+
+  const hash = window.location.hash || "";
+  const hashPath = hash.startsWith("#") ? hash.slice(1) : hash;
+  if (hashPath.startsWith("/")) {
+    return getNormalizedRequestPath(hashPath);
+  }
+
+  return getNormalizedRequestPath(window.location.pathname || "/");
+};
+
+const isDataToolsRoute = () => {
+  return /^\/data_tools(\/|$)/.test(getCurrentRoutePath());
+};
+
+const openDataToolsLicenseModal = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const now = Date.now();
+  if (now - lastDataToolsLicenseModalAt < DATATOOLS_LICENSE_MODAL_DEDUPE_MS) {
+    return;
+  }
+
+  lastDataToolsLicenseModalAt = now;
+  window.dispatchEvent(new CustomEvent(DATATOOLS_LICENSE_MODAL_EVENT));
+};
+
+const requestRequiresSecureTransport = (requestUrl, method = "GET") => {
+  const normalizedMethod = method.toUpperCase();
+  const normalizedPath = getNormalizedRequestPath(requestUrl);
+
+  return sensitiveRequestRules.some(
+    ({ method: sensitiveMethod, pattern }) =>
+      sensitiveMethod === normalizedMethod && pattern.test(normalizedPath)
+  );
+};
+
+const requestShouldSkipAuthorization = (
+  requestUrl,
+  method = "GET",
+  option = {}
+) => {
+  if (option?.skipAuthorization === true) {
+    return true;
+  }
+
+  const normalizedMethod = method.toUpperCase();
+  const normalizedPath = getNormalizedRequestPath(requestUrl);
+
+  return publicRequestRules.some(
+    ({ method: publicMethod, pattern }) =>
+      publicMethod === normalizedMethod && pattern.test(normalizedPath)
+  );
+};
+
+const getInsecureTransportResponse = () => ({
+  status: "error",
+  success: false,
+  currentAuthority: "guest",
+  error: {
+    reason: secureTransportErrorReason,
+  },
+});
+
+const cleanupRecentErrorNotifications = (now = Date.now()) => {
+  recentErrorNotifications.forEach((timestamp, key) => {
+    if (now - timestamp >= ERROR_NOTIFICATION_DEDUPE_MS) {
+      recentErrorNotifications.delete(key);
+    }
+  });
+};
+
+const showErrorNotification = ({
+  message,
+  description,
+  style,
+  dedupeKey,
+}) => {
+  const now = Date.now();
+  cleanupRecentErrorNotifications(now);
+  const key = dedupeKey || `${message}`;
+  const lastShownAt = recentErrorNotifications.get(key);
+  if (lastShownAt && now - lastShownAt < ERROR_NOTIFICATION_DEDUPE_MS) {
+    return;
+  }
+  recentErrorNotifications.set(key, now);
+  notification.error({
+    key,
+    placement: "topRight",
+    message,
+    description,
+    style,
+  });
+};
+
+const fetchReplayNonce = async (requestUrl, requestMethod, authorizationHeader) => {
+  const nonceEndpoint = buildUrlWithBasePath("/account/replay_nonce");
+  const headers = {
+    Accept: "application/json",
+    "Content-Type": "application/json; charset=utf-8",
+  };
+  if (authorizationHeader) {
+    headers.Authorization = authorizationHeader;
+  }
+
+  const response = await fetch(nonceEndpoint, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: JSON.stringify({
+      method: requestMethod,
+      path: getNormalizedRequestPath(requestUrl),
+    }),
+  });
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch (error) {
+    payload = null;
+  }
+
+  if (!response.ok || !payload?.nonce) {
+    const reason =
+      payload?.error?.reason ||
+      payload?.message ||
+      "failed to fetch replay nonce";
+    throw new Error(reason);
+  }
+
+  return payload.nonce;
+};
+
 const checkStatus = async (response, noticeable, option={}) => {
   const codeMessage = {
     200: formatMessage({ id: "app.message.http.status.200" }),
@@ -53,25 +263,42 @@ const checkStatus = async (response, noticeable, option={}) => {
   if (response.status >= 200 && response.status < 300) {
     return response;
   }
+  if (response.status === 403 && isDataToolsRoute()) {
+    let jsonRes = null;
+    try {
+      jsonRes = await response.clone().json();
+    } catch (error) {
+      jsonRes = null;
+    }
+    if (jsonRes?.error?.reason === DATATOOLS_LICENSE_REQUIRED_REASON) {
+      openDataToolsLicenseModal();
+      return response;
+    }
+  }
+  if (response.status === 409) {
+    let jsonRes = null;
+    try {
+      jsonRes = await response.clone().json();
+    } catch (error) {
+      jsonRes = null;
+    }
+    if (jsonRes?.error?.reason) {
+      return response;
+    }
+  }
   if (response.status == 500) {
-    const jsonRes = await response.clone().json();
-    if (jsonRes.error && !jsonRes.stack) {
+    let jsonRes = null;
+    try {
+      jsonRes = await response.clone().json();
+    } catch (error) {
+      jsonRes = null;
+    }
+    if (jsonRes?.error && !jsonRes.stack) {
       if (noticeable) {
-        let desc = "";
-        if (typeof jsonRes.error == "string") {
-          desc = jsonRes.error;
-        } else {
-          if (jsonRes.error?.reason) {
-            desc = (
-              <div style={{ color: "rgba(153,153,153,1)" }}>
-                {jsonRes.error.reason}
-              </div>
-            );
-          } else {
-            desc = JSON.stringify(jsonRes.error);
-          }
-        }
-        desc = (
+        const friendlyMessage = jsonRes.error?.key
+          ? formatMessage({ id: jsonRes.error.key })
+          : formatMessage({ id: "app.message.http.status.500" });
+        const desc = (
           <div>
             <div>
               <span
@@ -85,13 +312,16 @@ const checkStatus = async (response, noticeable, option={}) => {
                 {response.status}
               </span>
             </div>
-            {desc}
+            <div style={{ color: "rgba(153,153,153,1)" }}>
+              {friendlyMessage}
+            </div>
           </div>
         );
-        notification.error({
+        showErrorNotification({
           message: formatMessage({ id: "app.message.http.request.error" }),
           description: desc,
           style: { wordBreak: "break-all" },
+          dedupeKey: `http-500:${jsonRes.error?.key || jsonRes.error?.reason || friendlyMessage}`,
         });
       }
       return response;
@@ -104,10 +334,11 @@ const checkStatus = async (response, noticeable, option={}) => {
     option.hasOwnProperty("showErrorInner") &&
     option.showErrorInner === true
   ) {
-    notification.error({
+    showErrorNotification({
       message: response.statusText,
       description: errortext,
       style: { wordBreak: "break-all" },
+      dedupeKey: `http-inner:${response.status}:${response.statusText}:${errortext}`,
     });
     return response;
   }
@@ -136,10 +367,11 @@ const checkStatus = async (response, noticeable, option={}) => {
           {errortext}
         </div>
       );
-      notification.error({
+      showErrorNotification({
         message: `${formatMessage({ id: "app.message.http.request.error" })}`,
         description: desc,
         style: { wordBreak: "break-all" },
+        dedupeKey: `http-status:${response.status}:${errortext}`,
       });
     }
   }
@@ -264,10 +496,11 @@ export default function request(
     signal,
   };
   const newOptions = { ...defaultOptions, ...options };
+  const requestMethod = (newOptions.method || "GET").toUpperCase();
   if (
-    newOptions.method === "POST" ||
-    newOptions.method === "PUT" ||
-    newOptions.method === "DELETE"
+    requestMethod === "POST" ||
+    requestMethod === "PUT" ||
+    requestMethod === "DELETE"
   ) {
     if (!(newOptions.body instanceof FormData)) {
       newOptions.headers = {
@@ -290,9 +523,17 @@ export default function request(
     "Accept-Encoding": "gzip, deflate, br",
     ...newOptions.headers,
   };
-  const authorizationHeader = getAuthorizationHeader();
-  if (authorizationHeader) {
-    newOptions.headers["Authorization"] = authorizationHeader;
+  const requiresSecureTransport = requestRequiresSecureTransport(url, requestMethod);
+  if (requiresSecureTransport && !requestUsesSecureTransport(url)) {
+    if (noticeable) {
+      showErrorNotification({
+        message: "HTTPS required",
+        description: secureTransportErrorReason,
+        style: { wordBreak: "break-all" },
+        dedupeKey: `https-required:${getNormalizedRequestPath(url)}`,
+      });
+    }
+    return Promise.resolve(getInsecureTransportResponse());
   }
 
   const expirys = options.expirys && 60;
@@ -311,8 +552,11 @@ export default function request(
     }
   }
 
-  return (
-    fetch(url, newOptions)
+  const sendRequest = (nonce) => {
+    if (nonce) {
+      newOptions.headers["X-Request-Nonce"] = nonce;
+    }
+    return fetch(url, newOptions)
       .then((res) => checkStatus(res, noticeable, option))
       // .then(response => cachedSave(response, hashcode))
       .then((response) => {
@@ -332,11 +576,15 @@ export default function request(
           //connection refused
           const err = new Error();
           err.name = "ERR_CONNECTION_REFUSED";
-          err.message = "Failed to connnect server";
+          err.message = formatMessage({
+            id: "error.request.connection_refused",
+          });
           if (typeof setGlobalHealth === "function") {
             setGlobalHealth({
               error: err.name,
-              desc: err.message,
+              desc: formatMessage({
+                id: "error.request.connection_refused.tip",
+              }),
             });
           }
           return err;
@@ -344,7 +592,7 @@ export default function request(
 
         if (status === "AbortError") {
           if (noticeable) {
-            notification.error({
+            showErrorNotification({
               message: formatMessage({
                 id: "app.message.http.request.timeout",
               }),
@@ -355,6 +603,7 @@ export default function request(
                 "\r\nURL:" +
                 url,
               style: { wordBreak: "break-all" },
+              dedupeKey: `request-timeout:${url}`,
             });
           }
           return;
@@ -364,9 +613,15 @@ export default function request(
           if (status === 401) {
             // @HACK
             /* eslint-disable no-underscore-dangle */
-            if (location.href.indexOf("user/login") === -1) {
+            if (
+              option?.skipAuthRedirect !== true &&
+              location.href.indexOf("user/login") === -1
+            ) {
               window.g_app._store.dispatch({
                 type: "login/logout",
+                payload: {
+                  skipServerLogout: true,
+                },
               });
             }
           }
@@ -375,7 +630,9 @@ export default function request(
             if (location.href.includes('/insight/dashboard') && url.includes('/visualization/data')) {
               return e.rawResponse;
             }
-            router.push("/exception/403");
+            if (option?.skipAuthRedirect !== true) {
+              router.push("/exception/403");
+            }
           }
           if (status == 500) {
             router.push({
@@ -392,6 +649,43 @@ export default function request(
           return e.rawResponse;
         }
         return e.response;
-      })
-  );
+      });
+  };
+
+  const executeRequest = () => {
+    const authorizationHeader = requestShouldSkipAuthorization(
+      url,
+      requestMethod,
+      option
+    )
+      ? ""
+      : getAuthorizationHeader();
+    if (authorizationHeader) {
+      newOptions.headers["Authorization"] = authorizationHeader;
+    } else {
+      delete newOptions.headers["Authorization"];
+    }
+
+    const noncePromise = requiresSecureTransport
+      ? fetchReplayNonce(url, requestMethod, authorizationHeader)
+      : Promise.resolve(null);
+
+    const handleNonceError = (error) => {
+      if (noticeable) {
+        showErrorNotification({
+          message: "Request rejected",
+          description: error?.message || "failed to fetch replay nonce",
+          style: { wordBreak: "break-all" },
+          dedupeKey: `request-rejected:${getNormalizedRequestPath(url)}:${error?.message || "failed to fetch replay nonce"}`,
+        });
+      }
+      return getInsecureTransportResponse();
+    };
+
+    return noncePromise.then((nonce) => sendRequest(nonce), handleNonceError);
+  };
+
+  return Promise.resolve(
+    option?.skipAuthRefresh === true ? null : ensureFreshAccessToken(url)
+  ).then(executeRequest);
 }

@@ -28,26 +28,33 @@
 package api
 
 import (
+	"encoding/json"
 	log "github.com/cihub/seelog"
+	"infini.sh/console/common"
 	rbac "infini.sh/console/core/security"
+	"infini.sh/console/model"
+	"infini.sh/console/service"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
 	"time"
 )
 
+const errRoleAssignedToUsers = "role is still assigned to users"
+
 func (h APIHandler) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	roleType := ps.MustGetParameter("type")
 
-	//localUser, err := rbac.FromUserContext(r.Context())
-	//if err != nil {
-	//	log.Error(err.Error())
-	//	h.ErrorInternalServer(w, err.Error())
-	//	return
-	//}
-	err := rbac.IsAllowRoleType(roleType)
+	localUser, err := rbac.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.ErrorInternalServer(w, err.Error())
+		return
+	}
+	err = rbac.IsAllowRoleType(roleType)
 	if err != nil {
 		h.ErrorInternalServer(w, err.Error())
 		return
@@ -77,6 +84,16 @@ func (h APIHandler) CreateRole(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 	rbac.RoleMap[role.Name] = *role
+
+	if r.Header.Get("Referer") != "" {
+		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(localUser.Username).
+			WithLogTypeOperation().WithResourceTypeAccountCenter().
+			WithEventName("create role").WithEventSourceIP(common.GetClientIP(r)).
+			WithResourceName(role.Name).WithOperationTypeNew().
+			WithEventRecord(util.MustToJSON(role)).Build()
+		_ = service.LogAuditLog(auditLog)
+	}
+
 	h.WriteOKJSON(w, api.CreateResponse(id))
 	return
 
@@ -143,15 +160,26 @@ func (h APIHandler) GetRole(w http.ResponseWriter, r *http.Request, ps httproute
 func (h APIHandler) DeleteRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("id")
 
-	//localUser, err := biz.FromUserContext(r.Context())
-	//if err != nil {
-	//	log.Error(err.Error())
-	//	h.ErrorInternalServer(w, err.Error())
-	//	return
-	//}
+	localUser, err := rbac.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.ErrorInternalServer(w, err.Error())
+		return
+	}
 	oldRole, err := h.Role.Get(id)
 	if err != nil {
 		h.ErrorInternalServer(w, err.Error())
+		return
+	}
+
+	assignedUsers, err := countUsersByRoleID(id)
+	if err != nil {
+		h.ErrorInternalServer(w, err.Error())
+		return
+	}
+	if assignedUsers > 0 {
+		h.WriteError(w, errRoleAssignedToUsers, http.StatusConflict)
+		return
 	}
 	err = h.Adapter.Role.Delete(id)
 
@@ -161,20 +189,30 @@ func (h APIHandler) DeleteRole(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 	delete(rbac.RoleMap, oldRole.Name)
+
+	if r.Header.Get("Referer") != "" {
+		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(localUser.Username).
+			WithLogTypeOperation().WithResourceTypeAccountCenter().
+			WithEventName("delete role").WithEventSourceIP(common.GetClientIP(r)).
+			WithResourceName(oldRole.Name).WithOperationTypeDeletion().
+			WithEventRecord(util.MustToJSON(oldRole)).Build()
+		_ = service.LogAuditLog(auditLog)
+	}
+
 	h.WriteOKJSON(w, api.DeleteResponse(id))
 	return
 }
 
 func (h APIHandler) UpdateRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("id")
-	//localUser, err := biz.FromUserContext(r.Context())
-	//if err != nil {
-	//	log.Error(err.Error())
-	//	h.ErrorInternalServer(w, err.Error())
-	//	return
-	//}
+	localUser, err := rbac.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.ErrorInternalServer(w, err.Error())
+		return
+	}
 	role := &rbac.Role{}
-	err := h.DecodeJSON(r, role)
+	err = h.DecodeJSON(r, role)
 	if err != nil {
 		h.Error400(w, err.Error())
 		return
@@ -196,14 +234,40 @@ func (h APIHandler) UpdateRole(w http.ResponseWriter, r *http.Request, ps httpro
 	role.Updated = &now
 	role.Created = oldRole.Created
 	err = h.Role.Update(role)
-	delete(rbac.RoleMap, oldRole.Name)
-	rbac.RoleMap[role.Name] = *role
 
 	if err != nil {
 		_ = log.Error(err.Error())
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
+	delete(rbac.RoleMap, oldRole.Name)
+	rbac.RoleMap[role.Name] = *role
+
+	if r.Header.Get("Referer") != "" {
+		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(localUser.Username).
+			WithLogTypeOperation().WithResourceTypeAccountCenter().
+			WithEventName("update role").WithEventSourceIP(common.GetClientIP(r)).
+			WithResourceName(role.Name).WithOperationTypeModification().
+			WithEventRecord(util.MustToJSON(role)).Build()
+		_ = service.LogAuditLog(auditLog)
+	}
+
 	h.WriteOKJSON(w, api.UpdateResponse(id))
 	return
+}
+
+func countUsersByRoleID(roleID string) (int64, error) {
+	roleIDJSON, err := json.Marshal(roleID)
+	if err != nil {
+		return 0, err
+	}
+
+	query := orm.Query{
+		RawQuery: []byte(`{"query":{"term":{"roles.id":` + string(roleIDJSON) + `}},"size":0}`),
+	}
+	err, result := orm.Search(&rbac.User{}, &query)
+	if err != nil {
+		return 0, err
+	}
+	return result.Total, nil
 }

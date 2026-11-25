@@ -32,12 +32,14 @@ import (
 	authapi "infini.sh/console/modules/security/api"
 	"infini.sh/console/modules/security/config"
 	credapi "infini.sh/console/modules/security/credential/api"
+	_ "infini.sh/console/modules/security/filter"
 	"infini.sh/console/modules/security/realm"
 	"infini.sh/console/modules/security/realm/authc/oauth"
 	"infini.sh/framework/core/credential"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/orm"
+	_ "infini.sh/framework/modules/security/access_token"
 )
 
 type Module struct {
@@ -95,6 +97,8 @@ func (module *Module) Start() error {
 	}
 
 	realm.Init(module.cfg)
+	registerFrameworkAccountBridge()
+	registerConsoleLicenseTrialBridge()
 
 	return nil
 }

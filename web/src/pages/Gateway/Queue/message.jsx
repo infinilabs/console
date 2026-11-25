@@ -46,7 +46,7 @@ const QueueMessage = (props) => {
   const columns = useMemo(
     () => [
       {
-        title: "Message",
+        title: formatMessage({ id: "gateway.queue.message.field.message" }),
         dataIndex: "message",
         width: 650,
         render: (text, record, index) => (
@@ -54,11 +54,11 @@ const QueueMessage = (props) => {
         ),
       },
       {
-        title: "Offset",
+        title: formatMessage({ id: "gateway.queue.field.offset" }),
         dataIndex: "offset",
       },
       {
-        title: "Size",
+        title: formatMessage({ id: "gateway.queue.message.field.size" }),
         dataIndex: "size",
       },
     ],
@@ -144,7 +144,7 @@ const QueueMessage = (props) => {
             }}
           >
             <Button type="primary" onClick={onLoadMore}>
-              Load more
+              {formatMessage({ id: "gateway.queue.message.load_more" })}
             </Button>
           </div>
         </InfiniteScroll>

@@ -31,6 +31,7 @@ export interface IProps {
    */
   stateInterval: string;
   total: number;
+  totalRelation?: string;
   took?: number;
 }
 
@@ -40,6 +41,7 @@ export default ({
   timeRange,
   stateInterval,
   total,
+  totalRelation,
   took,
 }: IProps) => {
   const [interval, setInterval] = useState(stateInterval);
@@ -69,7 +71,7 @@ export default ({
     >
       <EuiFlexItem grow={false}>
         <div style={{ fontSize: 12}}>
-          Found <span style={{fontWeight: "bold" }}>{total}</span>{" "}
+          Found <span style={{fontWeight: "bold" }}>{totalRelation === "gte" ? `${total.toLocaleString()}+` : total.toLocaleString()}</span>{" "}
           records {took && (
             <span style={{marginLeft: 5 }}>
               ({took} milliscond)

@@ -23,7 +23,7 @@ INFINI Console Security is enabled by default，and we can disable it by configu
 ```aidl
 web:
   enabled: true
-  embedding_api: true
+  embedding_api: false
   auth:
     enabled: false
   ui:

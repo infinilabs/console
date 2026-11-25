@@ -143,8 +143,8 @@ class ClusterMonitor extends PureComponent {
       clusterID: null,
       activeTab: props.param?.tab || "cluster",
       timeRange: {
-        min: "now-1h", //moment().subtract(1, 'h').toISOString(),
-        max: "now", //moment().toISOString()
+        min: "auto",
+        max: "auto",
         timeFormatter: formatter.dates(1),
       },
     };
@@ -168,24 +168,36 @@ class ClusterMonitor extends PureComponent {
     fetchDataCount++;
     const { dispatch } = this.props;
     const { timeRange } = this.state;
-    const bounds = calculateBounds({
-      from: timeRange.min,
-      to: timeRange.max,
-    });
-    dispatch({
-      type: "clusterMonitor/fetchClusterMetrics",
-      payload: {
-        timeRange: {
-          min: bounds.min.valueOf(),
-          max: bounds.max.valueOf(),
+    const useAutoRange =
+      `${timeRange?.min || ""}`.toLowerCase() === "auto" ||
+      `${timeRange?.max || ""}`.toLowerCase() === "auto";
+    const resolvedRange = useAutoRange
+      ? { min: "auto", max: "auto" }
+      : (() => {
+          const bounds = calculateBounds({
+            from: timeRange.min,
+            to: timeRange.max,
+          });
+          return {
+            min: bounds.min.valueOf(),
+            max: bounds.max.valueOf(),
+          };
+        })();
+    Promise.resolve(
+      dispatch({
+        type: "clusterMonitor/fetchClusterMetrics",
+        payload: {
+          timeRange: resolvedRange,
+          cluster_id: this.state.clusterID,
         },
-        cluster_id: this.state.clusterID,
-      },
-    }).then((res) => {
-      this.setState({
-        spinning: false,
+      })
+    )
+      .catch(() => null)
+      .finally(() => {
+        this.setState({
+          spinning: false,
+        });
       });
-    });
   };
 
   componentDidUpdate(prevProps, prevState, snapshot) {
@@ -284,14 +296,17 @@ class ClusterMonitor extends PureComponent {
   }
 
   handleTimeChange = ({ start, end }) => {
-    const bounds = calculateBounds({
-      from: start,
-      to: end,
-    });
-    const day = moment
-      .duration(bounds.max.valueOf() - bounds.min.valueOf())
-      .asDays();
-    const intDay = parseInt(day) + 1;
+    let intDay = 1;
+    if (`${start || ""}`.toLowerCase() !== "auto" && `${end || ""}`.toLowerCase() !== "auto") {
+      const bounds = calculateBounds({
+        from: start,
+        to: end,
+      });
+      const day = moment
+        .duration(bounds.max.valueOf() - bounds.min.valueOf())
+        .asDays();
+      intDay = parseInt(day) + 1;
+    }
     this.setState(
       {
         timeRange: {
@@ -369,7 +384,12 @@ class ClusterMonitor extends PureComponent {
           {!clusterAvailable ? (
             <div className={styles.mask}>
               <div>
-                Cluster is not availabe since: {clusterStats?.timestamp}
+                {formatMessage(
+                  {
+                    id: "cluster.manage.monitoring.notice.unavailable_since",
+                  },
+                  { timestamp: clusterStats?.timestamp || "N/A" }
+                )}
               </div>
             </div>
           ) : !clusterMonitored &&
@@ -378,15 +398,24 @@ class ClusterMonitor extends PureComponent {
               .isAfter(clusterStats?.timestamp) ? (
             <div className={styles.mask}>
               <div>
-                Cluster is not monitored.{" "}
+                {formatMessage({
+                  id: "cluster.manage.monitoring.notice.unmonitored",
+                })}{" "}
                 <Button type="primary">
                   <Link to={`/resource/cluster/${selectedCluster.id}/edit`}>
-                    Go to open
+                    {formatMessage({
+                      id: "cluster.manage.monitoring.notice.enable_button",
+                    })}
                   </Link>
                 </Button>
               </div>
               <div className={styles.time}>
-                Last data collection time: {clusterStats?.timestamp}
+                {formatMessage(
+                  {
+                    id: "cluster.manage.monitoring.notice.last_collection_time",
+                  },
+                  { timestamp: clusterStats?.timestamp || "N/A" }
+                )}
               </div>
             </div>
           ) : null}

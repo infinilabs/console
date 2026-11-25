@@ -23,21 +23,25 @@ export default (props) => {
     }
   }, [data]);
 
+  const hasMore = total > dataNew.length;
+
   return (
     <div style={{ paddingTop: 20 }}>
       <Spin spinning={loading && dataNew.length == 0} tip="loading...">
         <InfiniteScroll
           dataLength={dataNew.length}
           next={() => {
-            if (typeof onNext == "function") {
+            if (!loading && typeof onNext == "function") {
               onNext(dataNew.length);
             }
           }}
-          hasMore={!loading && total > dataNew.length}
+          hasMore={hasMore}
           loader={
-            <h4 style={{ textAlign: "center", margin: "10px auto" }}>
-              Loading...
-            </h4>
+            loading ? (
+              <div style={{ textAlign: "center", margin: "10px auto", color: "#999" }}>
+                Loading...
+              </div>
+            ) : null
           }
           endMessage={null}
         >
@@ -51,6 +55,18 @@ export default (props) => {
             })}
           </Timeline>
         </InfiniteScroll>
+        {!loading && hasMore && dataNew.length > 0 && (
+          <div
+            style={{ textAlign: "center", margin: "10px auto", cursor: "pointer", color: "#1890ff" }}
+            onClick={() => {
+              if (typeof onNext == "function") {
+                onNext(dataNew.length);
+              }
+            }}
+          >
+            Click to load more
+          </div>
+        )}
       </Spin>
     </div>
   );

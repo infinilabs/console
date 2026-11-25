@@ -8,7 +8,7 @@ import HostDetail from "./host_detail";
 import { TagList } from "../tag";
 import HostCard from "./host_card";
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
 
 const Hosts = (props) => {
   const [collapse, setCollapse] = React.useState(false);
@@ -64,7 +64,7 @@ const Hosts = (props) => {
         <div className={"col left" + (collapse ? " collapse" : "")}>
           <div className="search-line">
             <div className="search-box">
-              <Search
+              <SearchInput
                 placeholder="search"
                 enterButton="Search"
                 onSearch={(value) => dispatch({ type: "search", value: value })}

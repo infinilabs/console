@@ -277,11 +277,11 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 		tags        = h.GetParameterOrDefault(req, "tags", "")
 	)
 	timeRange := util.MapStr{}
-	if min != "" {
-		timeRange["gte"] = min
+	if minValue, ok := normalizeTimeBound(min); ok {
+		timeRange["gte"] = minValue
 	}
-	if max != "" {
-		timeRange["lte"] = max
+	if maxValue, ok := normalizeTimeBound(max); ok {
+		timeRange["lte"] = maxValue
 	}
 	if len(timeRange) > 0 {
 		timeFilter := util.MapStr{
@@ -358,16 +358,31 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 	for _, hit := range esRes.Hits.Hits {
-		created, _ := parseTime(hit.Source["created"], time.RFC3339)
-		updated, _ := parseTime(hit.Source["updated"], time.RFC3339)
-		if !created.IsZero() && !updated.IsZero() {
-			endTime := time.Now()
-			if hit.Source["status"] == alerting.MessageStateRecovered {
-				endTime = updated
-			}
-			hit.Source["duration"] = endTime.Sub(created).Milliseconds()
+		alertMessage := &alerting.AlertMessage{}
+		if err := util.FromJSONBytes(util.MustToJSONBytes(hit.Source), alertMessage); err != nil {
+			continue
 		}
-
+		incident := resolveAlertMessageIncident(alertMessage)
+		startAt := getIncidentStartTime(alertMessage, incident)
+		if !startAt.IsZero() {
+			hit.Source["trigger_at"] = startAt
+		}
+		hit.Source["updated"] = resolveAlertDisplayUpdatedTime(alertMessage, incident, startAt)
+		endTime := time.Now()
+		if alertMessage.Status == alerting.MessageStateRecovered {
+			if recoveredAt := getRecoveredAt(alertMessage); !recoveredAt.IsZero() {
+				endTime = recoveredAt
+			} else if !alertMessage.Updated.IsZero() {
+				endTime = alertMessage.Updated
+			}
+		}
+		if !startAt.IsZero() {
+			duration := endTime.Sub(startAt).Milliseconds()
+			if duration < 0 {
+				duration = 0
+			}
+			hit.Source["duration"] = duration
+		}
 	}
 	h.WriteJSON(w, esRes, http.StatusOK)
 }
@@ -381,11 +396,56 @@ func parseTime(t interface{}, layout string) (time.Time, error) {
 	}
 }
 
+func getRecoveredAt(message *alerting.AlertMessage) time.Time {
+	if message == nil {
+		return time.Time{}
+	}
+	if !message.RecoveredAt.IsZero() {
+		return message.RecoveredAt
+	}
+	if message.Status == alerting.MessageStateRecovered && !message.Updated.IsZero() {
+		return message.Updated
+	}
+	return time.Time{}
+}
+
+func resolveAlertDisplayUpdatedTime(message *alerting.AlertMessage, incident alertMessageIncident, triggerAt time.Time) time.Time {
+	if message == nil {
+		if triggerAt.IsZero() {
+			return time.Time{}
+		}
+		return triggerAt
+	}
+	updatedAt := message.Updated
+	if !incident.LatestAt.IsZero() && (updatedAt.IsZero() || incident.LatestAt.After(updatedAt)) {
+		updatedAt = incident.LatestAt
+	}
+	if message.Status == alerting.MessageStateAlerting {
+		if !triggerAt.IsZero() && (updatedAt.IsZero() || updatedAt.Before(triggerAt)) {
+			return triggerAt
+		}
+	}
+	return updatedAt
+}
+
+func getIncidentStartTime(message *alerting.AlertMessage, incident alertMessageIncident) time.Time {
+	if message != nil && !message.Created.IsZero() {
+		return message.Created
+	}
+	if !incident.TriggerAt.IsZero() {
+		return incident.TriggerAt
+	}
+	if message == nil {
+		return time.Time{}
+	}
+	return message.Created
+}
+
 func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	message := &alerting.AlertMessage{
 		ID: ps.ByName("message_id"),
 	}
-	exists, err := orm.Get(message)
+	exists, err := orm.GetV2(orm.NewContext(), message)
 	if !exists || err != nil {
 		log.Error(err)
 		h.WriteJSON(w, util.MapStr{
@@ -397,7 +457,7 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 	rule := &alerting.Rule{
 		ID: message.RuleID,
 	}
-	exists, err = orm.Get(rule)
+	exists, err = orm.GetV2(orm.NewContext(), rule)
 	if !exists || err != nil {
 		log.Error(err)
 		h.WriteError(w, fmt.Sprintf("rule [%s] not found", rule.ID), http.StatusInternalServerError)
@@ -422,14 +482,27 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		}
 		conditions.Items[i].Expression = strings.ReplaceAll(expression, "result", metricExpression)
 	}
-	var duration time.Duration
-	if message.Status == alerting.MessageStateRecovered {
-		duration = message.Updated.Sub(message.Created)
-	} else {
-		duration = time.Now().Sub(message.Created)
+	incident := resolveAlertMessageIncident(message)
+	resolveAt := getRecoveredAt(message)
+
+	triggerAt := message.Created
+	if triggerAt.IsZero() {
+		triggerAt = getIncidentStartTime(message, incident)
+	}
+	if resolveAt.IsZero() && !incident.ResolveAt.IsZero() {
+		resolveAt = incident.ResolveAt
+	}
+	endAt := time.Now()
+	if message.Status == alerting.MessageStateRecovered && !resolveAt.IsZero() {
+		endAt = resolveAt
+	}
+	duration := endAt.Sub(triggerAt)
+	if duration < 0 {
+		duration = 0
 	}
 	detailObj := util.MapStr{
 		"message_id":        message.ID,
+		"event_id":          message.ID,
 		"rule_id":           message.RuleID,
 		"rule_name":         rule.Name,
 		"rule_enabled":      rule.Enabled,
@@ -437,9 +510,14 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		"message":           message.Message,
 		"priority":          message.Priority,
 		"created":           message.Created,
-		"updated":           message.Updated,
-		"resource_name":     rule.Resource.Name,
-		"resource_id":       rule.Resource.ID,
+		"updated":           resolveAlertDisplayUpdatedTime(message, incident, triggerAt),
+		"recovered_at":      message.RecoveredAt,
+		"trigger_at":        triggerAt,
+		"resolve_at":        resolveAt,
+		"trigger_event_id":  incident.TriggerEventID,
+		"resolve_event_id":  incident.ResolveEventID,
+		"resource_name":     firstNonEmptyString(message.ResourceName, rule.Resource.Name),
+		"resource_id":       firstNonEmptyString(message.ResourceID, rule.Resource.ID),
 		"resource_objects":  rule.Resource.Objects,
 		"conditions":        rule.Conditions,
 		"bucket_conditions": rule.BucketConditions,
@@ -455,11 +533,129 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 	h.WriteJSON(w, detailObj, http.StatusOK)
 }
 
+type alertMessageIncident struct {
+	TriggerEventID string
+	ResolveEventID string
+	TriggerAt      time.Time
+	ResolveAt      time.Time
+	LatestAt       time.Time
+}
+
+func resolveAlertMessageIncident(message *alerting.AlertMessage) alertMessageIncident {
+	if message == nil || message.RuleID == "" || message.Created.IsZero() {
+		return alertMessageIncident{}
+	}
+
+	endTime := time.Now()
+	if resolvedAt := getRecoveredAt(message); message.Status == alerting.MessageStateRecovered && !resolvedAt.IsZero() {
+		endTime = resolvedAt
+	}
+
+	must := []util.MapStr{
+		{
+			"term": util.MapStr{
+				"rule_id": util.MapStr{
+					"value": message.RuleID,
+				},
+			},
+		},
+		{
+			"range": util.MapStr{
+				"created": util.MapStr{
+					"gte": message.Created.Add(-1 * time.Second).UnixMilli(),
+					"lte": endTime.Add(1 * time.Second).UnixMilli(),
+				},
+			},
+		},
+	}
+	if message.ResourceID != "" {
+		must = append(must, util.MapStr{
+			"term": util.MapStr{
+				"resource_id": util.MapStr{
+					"value": message.ResourceID,
+				},
+			},
+		})
+	}
+
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(util.MapStr{
+			"size": 100,
+			"sort": []util.MapStr{
+				{
+					"created": util.MapStr{
+						"order": "asc",
+					},
+				},
+			},
+			"query": util.MapStr{
+				"bool": util.MapStr{
+					"must": must,
+				},
+			},
+		}),
+	}
+
+	err, result := orm.Search(alerting.Alert{}, &q)
+	if err != nil || len(result.Result) == 0 {
+		return alertMessageIncident{}
+	}
+
+	alerts := make([]alerting.Alert, 0, len(result.Result))
+	for _, item := range result.Result {
+		alertItem, ok := parseAlertSearchResult(item)
+		if !ok {
+			continue
+		}
+		alerts = append(alerts, alertItem)
+	}
+
+	return buildAlertMessageIncident(message, alerts)
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func buildAlertMessageIncident(message *alerting.AlertMessage, alerts []alerting.Alert) alertMessageIncident {
+	incident := alertMessageIncident{}
+	for _, alertItem := range alerts {
+		if incident.LatestAt.IsZero() || alertItem.Created.After(incident.LatestAt) {
+			incident.LatestAt = alertItem.Created
+		}
+		if alertItem.State == alerting.AlertStateAlerting {
+			if incident.TriggerEventID == "" || alertItem.Created.Before(incident.TriggerAt) {
+				incident.TriggerEventID = alertItem.ID
+				incident.TriggerAt = alertItem.Created
+			}
+		}
+		if message != nil && message.Status == alerting.MessageStateRecovered && getAlertDisplayState(&alertItem) == alerting.MessageStateRecovered {
+			incident.ResolveEventID = alertItem.ID
+			incident.ResolveAt = alertItem.Updated
+			if incident.ResolveAt.IsZero() {
+				incident.ResolveAt = alertItem.Created
+			}
+		}
+	}
+
+	if incident.TriggerEventID == "" && len(alerts) > 0 {
+		incident.TriggerEventID = alerts[0].ID
+		incident.TriggerAt = alerts[0].Created
+	}
+
+	return incident
+}
+
 func (h *AlertAPI) getMessageNotificationInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	message := &alerting.AlertMessage{
 		ID: ps.ByName("message_id"),
 	}
-	exists, err := orm.Get(message)
+	exists, err := orm.GetV2(orm.NewContext(), message)
 	if !exists || err != nil {
 		log.Error(err)
 		h.WriteJSON(w, util.MapStr{
@@ -471,7 +667,7 @@ func (h *AlertAPI) getMessageNotificationInfo(w http.ResponseWriter, req *http.R
 	rule := &alerting.Rule{
 		ID: message.RuleID,
 	}
-	exists, err = orm.Get(rule)
+	exists, err = orm.GetV2(orm.NewContext(), rule)
 	if !exists || err != nil {
 		log.Error(err)
 		h.WriteError(w, fmt.Sprintf("rule [%s] not found", rule.ID), http.StatusInternalServerError)
@@ -511,8 +707,8 @@ func getMessageNotificationStats(msg *alerting.AlertMessage) (util.MapStr, error
 	rangeQ := util.MapStr{
 		"gte": msg.Created.UnixMilli(),
 	}
-	if msg.Status == alerting.MessageStateRecovered {
-		rangeQ["lte"] = msg.Updated.UnixMilli()
+	if resolvedAt := getRecoveredAt(msg); msg.Status == alerting.MessageStateRecovered && !resolvedAt.IsZero() {
+		rangeQ["lte"] = resolvedAt.UnixMilli()
 	}
 	aggs := util.MapStr{
 		"grp_normal_channel": util.MapStr{

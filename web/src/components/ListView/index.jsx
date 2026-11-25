@@ -10,6 +10,7 @@ import React, {
   Fragment,
 } from "react";
 import { Card, Table, Button, Input, Icon, Switch, Empty, Spin } from "antd";
+import isEqual from "lodash/isEqual";
 import styles from "./index.less";
 import { formatMessage, getLocale } from "umi/locale";
 import { getTimezone } from "@/utils/utils";
@@ -27,6 +28,122 @@ import DatePicker from "./components/DatePicker";
 import TimeLine from "./components/TimeLine";
 import useResizeObserver from "@react-hook/resize-observer";
 import { WidgetRender } from "@/pages/DataManagement/View/WidgetLoader";
+import { buildContainsQueryString } from "@/lib/elasticsearch/util";
+import moment from "moment";
+
+const normalizeTimeRangeValue = (value, fallback = "") => {
+  if (typeof value === "string" || typeof value === "number") {
+    return `${value}`;
+  }
+  if (value && typeof value === "object") {
+    const candidates = ["from", "to", "min", "max", "gte", "lte", "start", "end"];
+    for (const key of candidates) {
+      if (
+        Object.prototype.hasOwnProperty.call(value, key) &&
+        value[key] !== undefined &&
+        value[key] !== null
+      ) {
+        const candidate = value[key];
+        if (typeof candidate === "string" || typeof candidate === "number") {
+          return `${candidate}`;
+        }
+      }
+    }
+  }
+  return fallback;
+};
+
+const normalizeTimeRange = (timeRange = {}, fallback = {}) => {
+  const merged = {
+    ...(fallback || {}),
+    ...(timeRange || {}),
+  };
+  return {
+    ...merged,
+    from: normalizeTimeRangeValue(merged.from, fallback?.from || "now-7d"),
+    to: normalizeTimeRangeValue(merged.to, fallback?.to || "now"),
+    timeField:
+      typeof merged.timeField === "string"
+        ? merged.timeField
+        : fallback?.timeField || "",
+  };
+};
+
+const normalizeHistogramRange = (timeRange = {}) => {
+  const from = normalizeTimeRangeValue(timeRange?.from, "now-15m");
+  const to = normalizeTimeRangeValue(timeRange?.to, "now");
+  if (from === "auto" || to === "auto") {
+    return {
+      from: "auto",
+      to: "auto",
+    };
+  }
+  return { from, to };
+};
+
+const resolveAutoHistogramRange = (timeRange = {}, aggregations = {}) => {
+  const normalized = normalizeHistogramRange(timeRange);
+  const isAuto =
+    normalizeTimeRangeValue(timeRange?.from, "") === "auto" ||
+    normalizeTimeRangeValue(timeRange?.to, "") === "auto";
+  const minValue = aggregations?.__listview_min_time?.value;
+  const maxValue = aggregations?.__listview_max_time?.value;
+  if (
+    Number.isFinite(minValue) &&
+    Number.isFinite(maxValue) &&
+    minValue > 0 &&
+    maxValue > 0
+  ) {
+    const minTs = Number(minValue);
+    const maxTs = Number(maxValue);
+    if (maxTs <= minTs) {
+      const center = maxTs > 0 ? maxTs : Date.now();
+      return {
+        from: moment(center).subtract(15, "minutes").toISOString(),
+        to: moment(center).toISOString(),
+      };
+    }
+    return {
+      from: moment(minTs).toISOString(),
+      to: moment(maxTs).toISOString(),
+    };
+  }
+  if (isAuto) {
+    return {
+      from: moment().subtract(15, "minutes").toISOString(),
+      to: moment().toISOString(),
+    };
+  }
+  if (normalized.from !== "now-15m" || normalized.to !== "now") {
+    return normalized;
+  }
+  return normalized;
+};
+
+const buildTimestampKeywordFilter = (keyword, timeField) => {
+  const value = `${keyword ?? ""}`.trim();
+  if (!value || !timeField) {
+    return null;
+  }
+  const parsed = moment.tz(
+    value,
+    ["YYYY-MM-DD HH:mm:ss", "YYYY-MM-DDTHH:mm:ss"],
+    true,
+    getTimezone()
+  );
+  if (!parsed.isValid()) {
+    return null;
+  }
+  return {
+    range: {
+      [timeField]: {
+        gte: parsed.clone().startOf("second").toISOString(),
+        lte: parsed.clone().endOf("second").toISOString(),
+        format: "strict_date_optional_time",
+      },
+    },
+  };
+};
 
 const Index = forwardRef((props, ref) => {
   const {
@@ -57,6 +174,8 @@ const Index = forwardRef((props, ref) => {
     onRow = null,
     showEmptyUI = false,
     setShowEmptyUI = null,
+    scroll,
+    datePickerContainerStyle = {},
   } = props;
 
   const headerExtra = headerToobarExtra.getExtra
@@ -66,16 +185,44 @@ const Index = forwardRef((props, ref) => {
     ? rowSelectionExtra.getExtra(props)
     : [];
 
+  const getHeaderExtraKey = (item, index) => {
+    let baseKey;
+    if (React.isValidElement(item) && item.key != null) {
+      baseKey = item.key;
+    } else if (item?.key != null) {
+      baseKey = item.key;
+    } else if (item?.id != null) {
+      baseKey = item.id;
+    } else if (item?.props?.id != null) {
+      baseKey = item.props.id;
+    }
+    return baseKey != null
+      ? `header-extra-${String(baseKey)}-${index}`
+      : `header-extra-${index}`;
+  };
+
   const [param, setParam] = useQueryParam("_g", JsonParam);
-  const [queryParams, setQueryParams] = useState({
-    ...defaultQueryParams,
-    ...param,
-    from: viewLayout === 'timeline' ? 0 : (defaultQueryParams.from ?? param.from)
+  const [queryParams, setQueryParams] = useState(() => {
+    const merged = {
+      ...defaultQueryParams,
+      ...(param || {}),
+      from:
+        viewLayout === "timeline"
+          ? 0
+          : defaultQueryParams.from ?? param?.from,
+    };
+    return {
+      ...merged,
+      timeRange: normalizeTimeRange(
+        merged?.timeRange,
+        defaultQueryParams?.timeRange
+      ),
+    };
   });
   const [histogramState, setHistogramState] = useState({
     visible: histogramVisible,
     widget: histogramWidget,
-    range: defaultQueryParams.timeRange,
+    range: normalizeHistogramRange(defaultQueryParams.timeRange),
   });
   useEffect(() => {
     if (histogramEnable) {
@@ -137,18 +284,23 @@ const Index = forwardRef((props, ref) => {
     return [columnsNew, sortOptions, aggOptions, searchFields];
   }, [columns]);
 
-  const formatAggs = useMemo(() => {
+  const [formatAggs, aggMetas] = useMemo(() => {
     let aggsJson = {};
+    let metas = {};
     let aggsArr = sideEnable ? aggOptions : [];
     aggsArr.map((item) => {
-      aggsJson[item.label] = {
+      aggsJson[item.field] = {
         terms: {
           field: item.field,
           size: item.size,
         },
       };
+      metas[item.field] = {
+        label: item.label,
+        field: item.field,
+      };
     });
-    return aggsJson;
+    return [aggsJson, metas];
   }, [sideEnable, aggOptions]);
 
   const formatQueryBody = (queryParams) => {
@@ -170,23 +322,49 @@ const Index = forwardRef((props, ref) => {
 
     let filter = [];
     //time range
-    if (queryParams?.timeRange && queryParams?.timeRange?.timeField) {
+    if (
+      queryParams?.timeRange &&
+      queryParams?.timeRange?.timeField &&
+      queryParams?.timeRange?.from !== "auto" &&
+      queryParams?.timeRange?.to !== "auto"
+    ) {
       let range = {};
       range[queryParams.timeRange.timeField] = {
         gte: queryParams.timeRange.from,
         lte: queryParams.timeRange.to,
+        format: "strict_date_optional_time",
       };
       filter.push({
         range,
       });
     }
     //query match
-    if (queryParams?.keyword) {
+    const keywordFilters = [];
+    const searchQuery = buildContainsQueryString(queryParams?.keyword);
+    if (searchQuery) {
       let query_string = {
-        query: `*${queryParams.keyword}*`,
+        query: searchQuery,
         fields: searchFields,
+        analyze_wildcard: true,
       };
-      filter.push({ query_string });
+      keywordFilters.push({ query_string });
+    }
+    const timestampKeywordFilter = buildTimestampKeywordFilter(
+      queryParams?.keyword,
+      queryParams?.timeRange?.timeField
+    );
+    if (timestampKeywordFilter) {
+      keywordFilters.push(timestampKeywordFilter);
+    }
+    if (keywordFilters.length === 1) {
+      filter.push(keywordFilters[0]);
+    } else if (keywordFilters.length > 1) {
+      filter.push({
+        bool: {
+          should: keywordFilters,
+          minimum_should_match: 1,
+        },
+      });
     }
 
     //sort by
@@ -199,6 +377,14 @@ const Index = forwardRef((props, ref) => {
         };
         return sortJson;
       });
+    }
+    const aggs = {
+      ...formatAggs,
+    };
+    const timeField = queryParams?.timeRange?.timeField;
+    if (timeField) {
+      aggs.__listview_min_time = { min: { field: timeField } };
+      aggs.__listview_max_time = { max: { field: timeField } };
     }
     return {
       query: {
@@ -219,7 +405,7 @@ const Index = forwardRef((props, ref) => {
         },
       },
       sort: sort,
-      aggs: formatAggs,
+      aggs,
     };
   };
 
@@ -242,6 +428,35 @@ const Index = forwardRef((props, ref) => {
     return res?.hits?.total?.value || 0;
   };
   const [dataSource, setDataSource] = useState({});
+  const tableDataSource = useMemo(() => {
+    const rows = Array.isArray(dataSource?.data) ? dataSource.data : [];
+    const rowKeyCounts = new Map();
+
+    rows.forEach((item, index) => {
+      const baseKey =
+        item?.id ?? item?._id ?? item?.key ?? item?._key ?? item?.name ?? null;
+      const normalizedKey =
+        baseKey == null || baseKey === "" ? `row-${index}` : String(baseKey);
+      rowKeyCounts.set(normalizedKey, (rowKeyCounts.get(normalizedKey) || 0) + 1);
+    });
+
+    return rows.map((item, index) => {
+      const baseKey =
+        item?.id ?? item?._id ?? item?.key ?? item?._key ?? item?.name ?? null;
+      const normalizedKey =
+        baseKey == null || baseKey === "" ? `row-${index}` : String(baseKey);
+      const uniqueKey =
+        rowKeyCounts.get(normalizedKey) > 1
+          ? `${normalizedKey}-${index}`
+          : normalizedKey;
+
+      return {
+        ...item,
+        __listview_row_key: uniqueKey,
+      };
+    });
+  }, [dataSource]);
+
   useMemo(async () => {
     let ds = value;
     // console.log("dataSource:", value);
@@ -361,22 +576,19 @@ const Index = forwardRef((props, ref) => {
   };
 
   const onTimeRangeChange = ({ start, end, timeField }) => {
+    const normalizedTimeRange = normalizeTimeRange(
+      { from: start, to: end, timeField },
+      defaultQueryParams?.timeRange
+    );
     setQueryParams((st) => ({
       ...st,
       from: 0,
-      timeRange: {
-        from: start,
-        to: end,
-        timeField: timeField,
-      },
+      timeRange: normalizedTimeRange,
     }));
     if (histogramEnable) {
-      let range = {
-        from: start,
-        to: end,
-      };
+      let range = normalizeHistogramRange(normalizedTimeRange);
       let series = histogramState.widget?.series?.map((item) => {
-        item.queries.time_field = timeField;
+        item.queries.time_field = normalizedTimeRange.timeField;
         return item;
       });
       let widget = { ...histogramState.widget, series };
@@ -384,9 +596,61 @@ const Index = forwardRef((props, ref) => {
     }
   };
 
+  const onHistogramQueriesChange = (nextQueries = {}) => {
+    const nextRange = nextQueries?.range;
+    if (!nextRange?.from || !nextRange?.to) {
+      return;
+    }
+    const timeField =
+      histogramState.widget?.series?.[0]?.queries?.time_field ||
+      queryParams?.timeRange?.timeField ||
+      defaultQueryParams?.timeRange?.timeField ||
+      "";
+    onTimeRangeChange({
+      start: nextRange.from,
+      end: nextRange.to,
+      timeField,
+    });
+  };
+
+  const histogramQuery = useMemo(() => {
+    const query = formatQueryBody(queryParams)?.query;
+    return query ? JSON.stringify(query) : undefined;
+  }, [JSON.stringify(queryParams)]);
+
+  const histogramRange = useMemo(
+    () =>
+      resolveAutoHistogramRange(
+        queryParams?.timeRange || {},
+        dataSource?.aggregations || {}
+      ),
+    [queryParams?.timeRange, dataSource?.aggregations]
+  );
+
+  const histogramAutoRangePending = useMemo(() => {
+    const fromValue = normalizeTimeRangeValue(queryParams?.timeRange?.from, "");
+    const toValue = normalizeTimeRangeValue(queryParams?.timeRange?.to, "");
+    const isAuto = fromValue === "auto" || toValue === "auto";
+    if (!isAuto) {
+      return false;
+    }
+    const minValue = dataSource?.aggregations?.__listview_min_time?.value;
+    const maxValue = dataSource?.aggregations?.__listview_max_time?.value;
+    return !(
+      Number.isFinite(minValue) &&
+      Number.isFinite(maxValue) &&
+      minValue > 0 &&
+      maxValue > 0
+    );
+  }, [queryParams?.timeRange, dataSource?.aggregations]);
+
   useEffect(() => {
-    setParam((st) => ({ ...st, ...queryParams }));
-  }, [queryParams]);
+    const nextParam = { ...(param || {}), ...queryParams };
+    if (isEqual(param || {}, nextParam)) {
+      return;
+    }
+    setParam(nextParam);
+  }, [param, queryParams, setParam]);
 
   //用 useImperativeHandle 暴露一些外部 ref 能访问的属性
   useImperativeHandle(ref, () => ({
@@ -418,7 +682,7 @@ const Index = forwardRef((props, ref) => {
       {sideEnable && aggOptions.length > 0 ? (
         <div className={styles.sideWrap}>
           <Side
-            aggs={formatAggs}
+            aggs={aggMetas}
             data={dataSource.aggregations || {}}
             filters={queryParams?.filters || {}}
             onFacetChange={onFacetChange}
@@ -477,6 +741,7 @@ const Index = forwardRef((props, ref) => {
                     onTimeRangeChange={onTimeRangeChange}
                     isRefreshPaused={isRefreshPaused}
                     recentlyUsedRangesKey={collectionName}
+                    wrapperStyle={datePickerContainerStyle}
                   />
                 ) : null}
                 <Button
@@ -488,7 +753,7 @@ const Index = forwardRef((props, ref) => {
                   {formatMessage({ id: "form.button.refresh" })}
                 </Button>
                 {headerExtra.map((item, i) => (
-                  <Fragment key={i}>{item}</Fragment>
+                   <Fragment key={getHeaderExtraKey(item, i)}>{item}</Fragment>
                 ))}
               </div>
             </div>
@@ -529,11 +794,26 @@ const Index = forwardRef((props, ref) => {
                 className={styles.histogramWrap}
                 style={{ display: histogramState.visible ? "block" : "none" }}
               >
-                <WidgetRender
-                  widget={histogramState.widget}
-                  range={histogramState.range}
-                  queryParams={queryParams?.filters || {}}
-                />
+                {histogramAutoRangePending ? (
+                  <div
+                    style={{
+                      minHeight: 140,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Spin size="small" />
+                  </div>
+                ) : (
+                  <WidgetRender
+                    widget={histogramState.widget}
+                    range={histogramRange}
+                    query={histogramQuery}
+                    queryParams={queryParams?.filters || {}}
+                    onGlobalQueriesChange={onHistogramQueriesChange}
+                  />
+                )}
               </div>
             ) : null}
 
@@ -543,8 +823,9 @@ const Index = forwardRef((props, ref) => {
                   size={"small"}
                   loading={loading}
                   columns={columnsNew}
-                  dataSource={dataSource?.data || []}
-                  rowKey={"id"}
+                  dataSource={tableDataSource}
+                  scroll={tableDataSource.length > 0 ? scroll : undefined}
+                  rowKey={"__listview_row_key"}
                   onChange={onTableChange}
                   pagination={{
                     size: "small",

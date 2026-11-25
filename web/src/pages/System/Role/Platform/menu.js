@@ -1,4 +1,6 @@
-export const menuData = [
+import { getEnterpriseTaskManagerEnabled } from "@/utils/authority";
+
+const baseMenuData = [
   { key: "workbench", menuKey: "overview" },
   {
     key: "cluster",
@@ -91,12 +93,12 @@ export const menuData = [
       },
     ],
   },
-
   {
     key: "system",
     children: [
       {
         key: "system.smtp_server",
+        menuKey: "system.settings",
       },
       {
         key: "system.security",
@@ -110,3 +112,23 @@ export const menuData = [
     ],
   },
 ];
+
+const enterpriseTaskMenu = {
+  key: "data_tools",
+  children: [
+    {
+      key: "data_tools.migration",
+    },
+    {
+      key: "data_tools.comparison",
+    },
+  ],
+};
+
+export const getMenuData = () => {
+  const menuData = [...baseMenuData];
+  if (getEnterpriseTaskManagerEnabled() === "true") {
+    menuData.splice(menuData.length - 1, 0, enterpriseTaskMenu);
+  }
+  return menuData;
+};

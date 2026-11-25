@@ -42,7 +42,7 @@ export default (props) => {
             padding: 0,
             height: "calc(100vh - 55px)",
           }}
-          wrapClassName={styles.widgetConfig}
+          className={styles.widgetConfig}
           onClose={() => onVisibleChange(false)}
           destroyOnClose
       >

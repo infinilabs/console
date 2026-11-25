@@ -36,6 +36,7 @@ const Advanced = ({
       />
       <div style={{ marginTop: 15 }}>
         <Tabs
+          className="anchor-sticky-tabs"
           type="card"
           tabBarGutter={10}
           tabPosition="right"

@@ -58,7 +58,7 @@ export default (props) => {
             >
               {indexName}
             </Link>{" "}
-            was <b>created</b> in cluster{" "}
+            was <b>recorded</b> in cluster{" "}
             <Link
               to={`/cluster/monitor/elasticsearch/${hit._source.metadata.labels.cluster_id}?_g={"timeRange":${timeRangeStr}}`}
             >

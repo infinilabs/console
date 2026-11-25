@@ -3,7 +3,6 @@ import {
   Card,
   Table,
   Popconfirm,
-  Divider,
   Form,
   Row,
   Col,
@@ -11,11 +10,15 @@ import {
   Input,
   message,
   Drawer,
+  Dropdown,
+  Menu,
   Radio,
   Tag,
   Select,
   Checkbox,
   Modal,
+  Icon,
+  Tooltip,
 } from "antd";
 import { formatMessage } from "umi/locale";
 import useFetch from "@/lib/hooks/use_fetch";
@@ -43,10 +46,93 @@ import AutoEnroll from "./components/AutoEnroll";
 import { sorter } from "@/utils/utils";
 import { HealthStatusView } from "@/components/infini/health_status_view";
 import { isNumber } from "lodash";
+import SearchInput from "@/components/infini/SearchInput";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 
-const { Search } = Input;
+const menuItemContentStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+};
 
 const AgentList = (props) => {
+  const renderCopyButton = (text, style = {}) => {
+    const button = (
+      <Tooltip title={formatMessage({ id: "agent.instance.registration.copy" })}>
+        <Icon
+          type="copy"
+          style={{
+            color: text ? "#007fff" : "rgba(0,0,0,0.25)",
+            cursor: text ? "pointer" : "not-allowed",
+            position: "absolute",
+            right: 8,
+            top: 8,
+            zIndex: 1,
+            fontSize: 16,
+            ...style,
+          }}
+        />
+      </Tooltip>
+    );
+
+    if (!text) {
+      return button;
+    }
+
+    return (
+      <CopyToClipboard
+        text={text}
+        onCopy={() => {
+          message.open({
+            type: "success",
+            key: "agent-registration-copy-success",
+            content: formatMessage({
+              id: "agent.install.setup.copy.success",
+            }),
+          });
+        }}
+      >
+        {button}
+      </CopyToClipboard>
+    );
+  };
+
+  const renderReadonlyBlock = (text) => (
+    <div
+      style={{
+        position: "relative",
+        borderRadius: 6,
+        fontSize: 14,
+        padding: "12px 40px 12px 12px",
+        background: "rgb(241, 242, 245)",
+        textAlign: "left",
+        lineHeight: 1.6,
+        overflow: "hidden",
+        fontFamily:
+          '"SFMono-Regular", Monaco, Menlo, Consolas, "Liberation Mono", "Ubuntu Mono", monospace',
+      }}
+    >
+      <div
+        style={{
+          overflowX: "auto",
+          overflowY: "hidden",
+          whiteSpace: "nowrap",
+          wordBreak: "normal",
+          paddingBottom: 2,
+        }}
+      >
+        {text || "-"}
+      </div>
+      {renderCopyButton(text)}
+    </div>
+  );
+
+  const renderWrapCell = (text) => (
+    <div style={{ minWidth: 0, whiteSpace: "normal", wordBreak: "break-all" }}>
+      {text}
+    </div>
+  );
+
   const [queryParams, setQueryParams] = React.useState({
     size: 20,
   });
@@ -61,7 +147,14 @@ const AgentList = (props) => {
   );
   const [isLoading, setIsLoading] = React.useState(loading);
   const [btnLoading, setBtnLoading] = React.useState(false);
+  const [registrationAccessLoading, setRegistrationAccessLoading] = React.useState(false);
   const [delInstId, setDelInstId] = React.useState("");
+  const [consoleAccessModal, setConsoleAccessModal] = React.useState({
+    visible: false,
+    consoleEndpoint: "",
+    managerToken: "",
+    registrationExpiredAt: "",
+  });
   const onDeleteClick = useCallback(
     async (instanceID) => {
       const deleteRes = await request(`/instance/${instanceID}`, {
@@ -90,26 +183,46 @@ const AgentList = (props) => {
     });
   };
   const [instanceStatus, setInstanceStatus] = React.useState({});
+  const [instanceStatusLoading, setInstanceStatusLoading] = React.useState(false);
+  const [expandedRowKeys, setExpandedRowKeys] = React.useState([]);
+
+  const isAgentStatusResolved = useCallback(
+    (instanceID) => Object.prototype.hasOwnProperty.call(instanceStatus, instanceID),
+    [instanceStatus]
+  );
+
+  const isAgentOnline = useCallback(
+    (instanceID) => !!instanceStatus[instanceID]?.system,
+    [instanceStatus]
+  );
 
   const columns = useMemo(
     () => [
       {
-        title: "Name",
+        title: formatMessage({ id: "gateway.instance.column.name" }),
+        width: 180,
         dataIndex: "name",
+        render: (text) => renderWrapCell(text),
         sorter: (a, b) => sorter.string(a, b, "name"),
       },
       {
-        title: "Endpoint",
+        title: formatMessage({ id: "gateway.instance.column.endpoint" }),
+        width: 220,
         dataIndex: "endpoint",
+        render: (text) => renderWrapCell(text),
         sorter: (a, b) => sorter.string(a, b, "endpoint"),
       },
       {
-        title: "Status",
+        title: formatMessage({ id: "gateway.instance.column.status" }),
         width: 120,
         dataIndex: "status",
         render: (text, record) => {
           const status = instanceStatus[record.id]?.system ? "online" : "N/A";
-          return <HealthStatusView status={status} label={text} />;
+          const label =
+            text === "online" || text === "Online"
+              ? formatMessage({ id: "gateway.instance.status.online" })
+              : text;
+          return <HealthStatusView status={status} label={label} />;
         },
         sorter: (a, b) => {
           const status1 = instanceStatus[a.id]?.system ? 1 : 0;
@@ -118,7 +231,7 @@ const AgentList = (props) => {
         },
       },
       {
-        title: "CPU",
+        title: formatMessage({ id: "gateway.instance.column.cpu" }),
         width: 100,
         render: (text, record) => {
           return instanceStatus[record.id]?.system?.cpu ||
@@ -140,7 +253,7 @@ const AgentList = (props) => {
         },
       },
       {
-        title: "Memory",
+        title: formatMessage({ id: "gateway.instance.column.memory" }),
         width: 130,
         render: (text, record) => {
           if (!instanceStatus[record.id]?.system) {
@@ -162,7 +275,7 @@ const AgentList = (props) => {
         },
       },
       {
-        title: "Uptime",
+        title: formatMessage({ id: "gateway.instance.column.uptime" }),
         width: 130,
         render: (text, record) => {
           if (!instanceStatus[record.id]?.system) {
@@ -209,41 +322,52 @@ const AgentList = (props) => {
       //     return text;
       //   },
       // },
-      // {
-      //   title: "Version",
-      //   dataIndex: "version.number",
-      // },
-      // {
-      //   title: "Last Updated",
-      //   dataIndex: "updated",
-      //   render: (text) => {
-      //     return moment(text).format("YYYY-MM-DD HH:mm:ss");
-      //   },
-      // },
+      {
+        title: formatMessage({ id: "overview.column.version" }),
+        width: 120,
+        render: (text, record) => record?.application?.version?.number || null,
+      },
       {
         title: formatMessage({ id: "table.field.actions" }),
-        width: 120,
+        width: 100,
         render: (text, record) => (
           <div>
             {hasAuthority("agent.instance:all") ? (
-              <>
-                {/* <Divider key="d2" type="vertical" /> Task Assignment*/}
-                {/* <a onClick={() => onTaskSettingsClick(record)}>Task Settings</a>
-                <Divider key="d3" type="vertical" /> */}
-                <Link
-                  key="edit"
-                  to={`/resource/agent/instance/edit/${record.id}`}
+              <Dropdown
+                overlay={
+                  <Menu>
+                   <Menu.Item key="edit">
+                     <Link to={`/resource/agent/instance/edit/${record.id}`}>
+                       <span style={menuItemContentStyle}>
+                         <Icon type="edit" />
+                         <span>{formatMessage({ id: "form.button.edit" })}</span>
+                       </span>
+                     </Link>
+                   </Menu.Item>
+                   <Menu.Item key="delete">
+                     <Popconfirm
+                       title={formatMessage({
+                         id: "agent.instance.delete.confirm.title",
+                       })}
+                       onConfirm={() => onDeleteClick(record.id)}
+                     >
+                       <a style={menuItemContentStyle}>
+                         <Icon type="delete" />
+                         <span>{formatMessage({ id: "form.button.delete" })}</span>
+                       </a>
+                     </Popconfirm>
+                   </Menu.Item>
+                  </Menu>
+                }
+                trigger={["click"]}
+              >
+                <a
+                  style={{ fontSize: "20px" }}
+                  onClick={(e) => e.preventDefault()}
                 >
-                  {formatMessage({ id: "form.button.edit" })}
-                </Link>
-                <Divider key="d3" type="vertical" />
-                <Popconfirm
-                  title="Sure to delete?"
-                  onConfirm={() => onDeleteClick(record.id)}
-                >
-                  <a>{formatMessage({ id: "form.button.delete" })}</a>
-                </Popconfirm>
-              </>
+                  <Icon type="ellipsis" />
+                </a>
+              </Dropdown>
             ) : null}
           </div>
         ),
@@ -267,10 +391,14 @@ const AgentList = (props) => {
   useEffect(() => {
     const fetchStatus = async () => {
       if (!instances || instances.length == 0) {
+        setInstanceStatus({});
+        setInstanceStatusLoading(false);
         return;
       }
+      setInstanceStatus({});
+      setInstanceStatusLoading(true);
       const instanceIDs = instances.map((inst) => inst.id);
-      const statusRes = await request(`/instance/stats`, {
+      const statusRes = await request(`/agent/instance/stats`, {
         method: "POST",
         body: instanceIDs,
       });
@@ -278,9 +406,59 @@ const AgentList = (props) => {
       if (statusRes && !statusRes.error) {
         setInstanceStatus(statusRes);
       }
+      setInstanceStatusLoading(false);
     };
     fetchStatus();
-  }, [value]);
+  }, [instances]);
+
+  useEffect(() => {
+    setExpandedRowKeys((keys) =>
+      keys.filter(
+        (key) =>
+          instances.some((instance) => instance.id === key) && isAgentOnline(key)
+      )
+    );
+  }, [instances, isAgentOnline]);
+
+  const onExpand = useCallback(
+    (expanded, record) => {
+      if (!expanded) {
+        setExpandedRowKeys((keys) => keys.filter((key) => key !== record.id));
+        return;
+      }
+      if (!isAgentStatusResolved(record.id) || !isAgentOnline(record.id)) {
+        return;
+      }
+      setExpandedRowKeys((keys) =>
+        keys.includes(record.id) ? keys : [...keys, record.id]
+      );
+    },
+    [isAgentOnline, isAgentStatusResolved]
+  );
+
+  const renderExpandIcon = useCallback(
+    ({ expanded, onExpand, record }) => {
+      const resolved = isAgentStatusResolved(record.id);
+      if (!resolved) {
+        return instanceStatusLoading ? (
+          <Icon type="loading" style={{ color: "#bfbfbf" }} />
+        ) : (
+          <span style={{ display: "inline-block", width: 14 }} />
+        );
+      }
+      if (!isAgentOnline(record.id)) {
+        return <span style={{ display: "inline-block", width: 14 }} />;
+      }
+      return (
+        <Icon
+          type={expanded ? "minus-square" : "plus-square"}
+          style={{ color: "#1890ff", cursor: "pointer" }}
+          onClick={(event) => onExpand(record, event)}
+        />
+      );
+    },
+    [instanceStatusLoading, isAgentOnline, isAgentStatusResolved]
+  );
 
   const handleTableChange = (pagination, filters, sorter, extra) => {
     const { pageSize, current } = pagination;
@@ -345,9 +523,16 @@ const AgentList = (props) => {
       if (delInstId == record.id) {
         return null;
       }
-      return <AgentRowDetail agentID={record.id} t={queryParams.t} />;
+      if (!isAgentOnline(record.id)) {
+        return null;
+      }
+      return (
+        <div style={{ width: 0, minWidth: "100%", maxWidth: "100%", overflow: "hidden" }}>
+          <AgentRowDetail agentID={record.id} t={queryParams.t} />
+        </div>
+      );
     },
-    [queryParams.t, delInstId]
+    [queryParams.t, delInstId, isAgentOnline]
   );
 
   const onAutoEnroll = async (clusterIDs) => {
@@ -389,7 +574,7 @@ const AgentList = (props) => {
       },
     });
     if(statusRes && statusRes.acknowledged){
-      message.success("submit successfully");
+      message.success(formatMessage({ id: "app.message.operate.success" }));
     }
     setClearLoading(false);
   }
@@ -401,14 +586,65 @@ const AgentList = (props) => {
          <div>{formatMessage({ id: "agent.instance.clear.modal.desc" })}</div>
         </>
       ),
-      okText: "Yes",
+      okText: formatMessage({ id: "form.button.ok" }),
       okType: "danger",
-      cancelText: "No",
+      cancelText: formatMessage({ id: "form.button.cancel" }),
       onOk() {
         onClearClick();
       },
     });
   }, []);
+
+  const showConsoleAccessInfo = useCallback(async () => {
+    setRegistrationAccessLoading(true);
+    const res = await request("/instance/_prepare_registration", {
+      method: "POST",
+    });
+    setRegistrationAccessLoading(false);
+    if (res?.error) {
+      message.error(
+        formatMessage({ id: "agent.instance.registration.console.load_failed" })
+      );
+      return;
+    }
+    setConsoleAccessModal({
+      visible: true,
+      consoleEndpoint: res?.endpoint || "",
+      managerToken: res?.token || "",
+      registrationExpiredAt: res?.expired_at || "",
+    });
+  }, []);
+
+  const registrationActionMenu = (
+    <Menu
+      onClick={({ key }) => {
+        if (key === "register") {
+          router.push(`/resource/agent/new`);
+          return;
+        }
+        if (key === "console-info") {
+          showConsoleAccessInfo();
+        }
+      }}
+    >
+      <Menu.Item key="register">
+        <span style={menuItemContentStyle}>
+          <Icon type="user-add" />
+          <span>{formatMessage({ id: "agent.instance.registration.menu.register" })}</span>
+        </span>
+      </Menu.Item>
+      <Menu.Item key="console-info">
+        <span style={menuItemContentStyle}>
+          <Icon type="safety-certificate" />
+          <span>{formatMessage({ id: "agent.instance.registration.menu.info" })}</span>
+        </span>
+      </Menu.Item>
+    </Menu>
+  );
+
+  const consoleTokenTip = formatMessage({
+    id: "agent.instance.registration.console.token.tip",
+  });
 
   return (
     <PageHeaderWrapper>
@@ -416,16 +652,20 @@ const AgentList = (props) => {
         <div
           style={{
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-start",
             justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 10,
             marginBottom: 15,
           }}
         >
-          <div style={{ maxWidth: 450, flex: "1 1 auto" }}>
-            <Search
+          <div style={{ maxWidth: 450, minWidth: 0, flex: "1 1 320px" }}>
+            <SearchInput
               allowClear
-              placeholder="Type keyword to search"
-              enterButton="Search"
+              placeholder={formatMessage({
+                id: "system.security.search.placeholder",
+              })}
+              enterButton={formatMessage({ id: "form.button.search" })}
               onSearch={(value) => {
                 onSearchClick(value);
               }}
@@ -438,30 +678,36 @@ const AgentList = (props) => {
             style={{
               display: "flex",
               alignItems: "center",
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
               gap: 10,
             }}
           >
             {
               hasAuthority("agent.instance:all") && (
                 <>
-                  <Button loading={clearLoading} onClick={showClearConfirm}>
-                  {formatMessage({ id: "agent.instance.clear.title" })}
-                </Button>
                   <Button
-                    type="primary"
-                    onClick={() => {
-                      setEditState((st) => {
-                        return {
-                          ...st,
-                          autoEnrollVisible: true,
-                        };
-                      });
-                    }}
+                   loading={clearLoading}
+                   icon="delete"
+                   onClick={showClearConfirm}
                   >
-                    {formatMessage({ id: "agent.instance.auto_associate.title" })}
+                   {formatMessage({ id: "agent.instance.clear.title" })}
                   </Button>
                   <Button
-                    type="primary"
+                   type="primary"
+                   icon="deployment-unit"
+                   onClick={() => {
+                     setEditState((st) => ({
+                       ...st,
+                       autoEnrollVisible: true,
+                     }));
+                   }}
+                  >
+                   {formatMessage({ id: "agent.instance.auto_associate.title" })}
+                  </Button>
+                  <Button
+                   type="primary"
+                   icon="cloud-download"
                     onClick={() => {
                       setEditState((st) => {
                         return {
@@ -480,13 +726,16 @@ const AgentList = (props) => {
               {formatMessage({ id: "form.button.refresh" })}
             </Button>
             {hasAuthority("agent.instance:all") ? (
-              <Button
-                type="primary"
-                icon="plus"
-                onClick={() => router.push(`/resource/agent/new`)}
-              >
-                {formatMessage({ id: "gateway.instance.btn.new" })}
-              </Button>
+              <Dropdown overlay={registrationActionMenu} trigger={["click"]}>
+                <Button
+                  type="primary"
+                  icon="plus"
+                  loading={registrationAccessLoading}
+                >
+                  {formatMessage({ id: "form.button.new" })}
+                  <Icon type="down" />
+                </Button>
+              </Dropdown>
             ) : null}
           </div>
         </div>
@@ -496,7 +745,9 @@ const AgentList = (props) => {
           loading={isLoading}
           bordered
           dataSource={instances}
+          scroll={instances.length > 0 ? { x: "max-content" } : undefined}
           rowKey={"id"}
+          tableLayout="fixed"
           pagination={{
             size: "small",
             pageSize: queryParams.size,
@@ -508,7 +759,9 @@ const AgentList = (props) => {
           columns={columns}
           onChange={handleTableChange}
           expandedRowRender={expandedRowRender}
-          scroll={{x: 'max-content' }}
+          expandedRowKeys={expandedRowKeys}
+          onExpand={onExpand}
+          expandIcon={renderExpandIcon}
         />
         <Drawer
           title={`Task Settings(${editState.editItem?.remote_ip})`}
@@ -682,6 +935,41 @@ const AgentList = (props) => {
         >
           <AutoEnroll onEnroll={onAutoEnroll} loading={btnLoading} />
         </Drawer>
+        <Modal
+          visible={consoleAccessModal.visible}
+          title={formatMessage({ id: "agent.instance.registration.console.title" })}
+          footer={null}
+          onCancel={() =>
+            setConsoleAccessModal((state) => ({
+              ...state,
+              visible: false,
+            }))
+          }
+          destroyOnClose
+        >
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 14 }}>
+              {formatMessage({
+                id: "agent.instance.registration.access.endpoint",
+              })}
+            </div>
+            {renderReadonlyBlock(consoleAccessModal.consoleEndpoint)}
+            <div style={{ marginTop: 8, color: "rgba(0,0,0,0.45)" }}>
+              {formatMessage({
+                id: "agent.instance.registration.console.endpoint.tip",
+              })}
+            </div>
+          </div>
+          <div>
+            <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 14 }}>
+              {formatMessage({
+                id: "agent.instance.registration.access.credential",
+              })}
+            </div>
+            {renderReadonlyBlock(consoleAccessModal.managerToken)}
+            <div style={{ marginTop: 8, color: "rgba(0,0,0,0.45)" }}>{consoleTokenTip}</div>
+          </div>
+        </Modal>
       </Card>
     </PageHeaderWrapper>
   );
@@ -728,11 +1016,11 @@ const DiscoverAgent = ({ addSuccessCb }) => {
   }, []);
   const columns = [
     {
-      title: "Agent IP",
+      title: formatMessage({ id: "agent.instance.column.agent_ip" }),
       dataIndex: "remote_ip",
     },
     {
-      title: "Version",
+      title: formatMessage({ id: "overview.column.version" }),
       dataIndex: "version",
     },
     {
@@ -742,7 +1030,9 @@ const DiscoverAgent = ({ addSuccessCb }) => {
           {hasAuthority("agent.instance:all") ? (
             <>
               <Popconfirm
-                title="Sure to delete?"
+                title={formatMessage({
+                  id: "agent.instance.delete.confirm.title",
+                })}
                 onConfirm={() => onDeleteClick(record.id)}
               >
                 <a>{formatMessage({ id: "form.button.delete" })}</a>
@@ -795,6 +1085,7 @@ const DiscoverAgent = ({ addSuccessCb }) => {
         columns={columns}
         rowKey="id"
         dataSource={instances}
+        scroll={instances.length > 0 ? { x: "max-content" } : undefined}
       />
       <div style={{ textAlign: "right", marginTop: "1em" }}>
         <Button type="primary" onClick={onAddAgentsClick}>

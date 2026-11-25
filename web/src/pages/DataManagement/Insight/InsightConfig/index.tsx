@@ -1,5 +1,6 @@
 import { Drawer, Icon, Tabs } from "antd";
 import { useState } from "react";
+import { formatMessage } from "umi/locale";
 import SearchConfig from "./SearchConfig";
 import LayoutConfig from "./LayoutConfig";
 
@@ -25,17 +26,17 @@ export default (props: IProps) => {
     const { searchConfig, onSearchConfigChange, layoutConfig } = props;
     const [visible, setVisible] = useState(false);
 
-    const [activeKey, setActiveKey] = useState("Search");
+    const [activeKey, setActiveKey] = useState("search");
 
     return (
       <>
         <Icon 
           type={"setting"}
-          title={"Insight Config"}
+          title={formatMessage({ id: "insight.config.title" })}
           onClick={() => setVisible(true)}
         />
         <Drawer
-          title="Insight Config"
+          title={formatMessage({ id: "insight.config.title" })}
           placement="right"
           onClose={() => setVisible(false)}
           visible={visible}
@@ -49,7 +50,7 @@ export default (props: IProps) => {
             onChange={setActiveKey} 
             // tabBarExtraContent={<Icon type="close" onClick={() => setVisible(false)}/>}
           >
-            <Tabs.TabPane tab="Search" key="Search" style={{ padding: 24}}>
+            <Tabs.TabPane tab={formatMessage({ id: "insight.config.tab.search" })} key="search" style={{ padding: 24}}>
               <SearchConfig {...searchConfig} onChange={onSearchConfigChange}/>
             </Tabs.TabPane>
             {/* <Tabs.TabPane tab="Layout" key="Layout" style={{ padding: 24}}>

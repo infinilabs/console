@@ -1,6 +1,7 @@
 import { Form, Input, InputNumber, Select, Switch, Divider } from "antd";
 import styles from './index.less';
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { formatMessage } from "umi/locale";
 
 const InputGroup = Input.Group;
 const { Option } = Select;
@@ -15,10 +16,10 @@ interface IProps {
 }
 
 const timeIntervals = [
-  { label: 'Seconds', value: 's' },
-  { label: 'Minutes', value: 'm' },
-  { label: 'Hours', value: 'h' },
-  { label: 'Days', value: 'd' },
+  { labelId: 'insight.config.search.time_interval.seconds', value: 's' },
+  { labelId: 'insight.config.search.time_interval.minutes', value: 'm' },
+  { labelId: 'insight.config.search.time_interval.hours', value: 'h' },
+  { labelId: 'insight.config.search.time_interval.days', value: 'd' },
 ];
 
 export default (props: IProps) => {
@@ -44,14 +45,14 @@ export default (props: IProps) => {
         className={styles.form}
         colon={false}
       >
-        <Form.Item label="Track Total Hits">
+        <Form.Item label={formatMessage({ id: "insight.config.search.track_total_hits" })}>
             <Switch 
                 size="small"
                 checked={trackTotalHits} 
                 onChange={(checked) => onChange(checked, 'track_total_hits')} 
             />
         </Form.Item>
-        <Form.Item label="TimeOut">
+        <Form.Item label={formatMessage({ id: "insight.config.search.timeout" })}>
           <div style={{ display: 'flex'}}>
             <Input.Group compact>
               <InputNumber
@@ -67,29 +68,29 @@ export default (props: IProps) => {
               <Select value={timeoutObject.unit} onChange={(value) => onChange(`${timeoutObject.value}${value}`, 'time_out')} style={{ width: 100 }}>
                 {timeIntervals.map((item) => (
                     <Select.Option key={item.value} value={item.value}>
-                      {item.label}
+                      {formatMessage({ id: item.labelId })}
                     </Select.Option>
                   ))}
               </Select>
             </Input.Group>
           </div>
         </Form.Item>
-        <Divider orientation="left">Field Summary</Divider>
-        <Form.Item label="Whether to sample">
+        <Divider orientation="left">{formatMessage({ id: "insight.config.search.field_summary" })}</Divider>
+        <Form.Item label={formatMessage({ id: "insight.config.search.whether_to_sample" })}>
             <Switch 
                 size="small"
                 checked={whetherToSample!==undefined ? whetherToSample : true} 
                 onChange={(checked) => onChange(checked, 'whether_to_sample')} 
             />
         </Form.Item>
-        <Form.Item label="Sample records">
+        <Form.Item label={formatMessage({ id: "insight.config.search.sample_records" })}>
         <InputGroup compact>
           <Select
             style={{ width: '30%' }}
             defaultValue={sampleRecords || 'manual'}
             onChange={(value) => onChange(value, 'sample_records')}>
-            <Option key="all" value="all">all records</Option>
-            <Option key="manual" value="manual">manual setting</Option>
+            <Option key="all" value="all">{formatMessage({ id: "insight.config.search.sample_records.all" })}</Option>
+            <Option key="manual" value="manual">{formatMessage({ id: "insight.config.search.sample_records.manual" })}</Option>
           </Select>
           {sampleRecords==='manual'?<InputNumber
             min={1000}
@@ -99,7 +100,7 @@ export default (props: IProps) => {
             onChange={(value) => onChange(value, 'sample_size')} />:null}
         </InputGroup>
         </Form.Item>
-        <Form.Item label="Top number">
+        <Form.Item label={formatMessage({ id: "insight.config.search.top_number" })}>
           <InputNumber
             min={5}
             max={100}

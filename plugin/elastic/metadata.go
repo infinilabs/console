@@ -40,6 +40,7 @@ import (
 	"infini.sh/framework/core/pipeline"
 	"infini.sh/framework/core/queue"
 	"infini.sh/framework/core/util"
+	"time"
 )
 
 type MetadataProcessor struct {
@@ -98,6 +99,8 @@ func (processor *MetadataProcessor) Process(ctx *pipeline.Context) error {
 			switch typ {
 			case "index_health_change":
 				//err = processor.HandleIndexHealthChange(&ev)
+			case "node_health_change":
+				err = processor.HandleNodeHealthChange(pop.Data)
 			case "index_state_change":
 				indexState, _, _, err := jsonparser.Get(pop.Data, "payload", "index_state")
 				if err != nil {
@@ -152,6 +155,62 @@ func (processor *MetadataProcessor) HandleUnknownNodeStatus(ev []byte) error {
     }
   }}`
 	queryDsl := fmt.Sprintf(queryDslTpl, clusterID)
+	_, err = esClient.UpdateByQuery(orm.GetIndexName(elastic.NodeConfig{}), []byte(queryDsl))
+	return err
+}
+
+func (processor *MetadataProcessor) HandleNodeHealthChange(ev []byte) error {
+	clusterID, err := jsonparser.GetString(ev, "metadata", "labels", "cluster_id")
+	if err != nil {
+		return err
+	}
+	nodeID, err := jsonparser.GetString(ev, "metadata", "labels", "node_id")
+	if err != nil {
+		nodeID, err = jsonparser.GetString(ev, "metadata", "labels", "node_uuid")
+		if err != nil {
+			return err
+		}
+	}
+	status, err := jsonparser.GetString(ev, "metadata", "labels", "to")
+	if err != nil {
+		return err
+	}
+	esClient := elastic.GetClient(processor.config.Elasticsearch)
+	queryDslTpl := `{"script": {
+    "source": "ctx._source.metadata.labels.status=params.status; ctx._source.timestamp=params.timestamp",
+    "lang": "painless",
+    "params": {
+      "status": %s,
+      "timestamp": %s
+    }
+  },
+  "query": {
+    "bool": {
+      "must": [
+        {"term": {
+          "metadata.cluster_id": {
+            "value": %s
+          }
+        }},
+        {"term": {
+          "metadata.node_id": {
+            "value": %s
+          }
+        }},
+        {"term": {
+          "metadata.category": {
+            "value": "elasticsearch"
+          }
+        }}
+      ]
+    }
+  }}`
+	queryDsl := fmt.Sprintf(queryDslTpl,
+		util.MustToJSON(status),
+		util.MustToJSON(time.Now().UTC().Format(time.RFC3339Nano)),
+		util.MustToJSON(clusterID),
+		util.MustToJSON(nodeID),
+	)
 	_, err = esClient.UpdateByQuery(orm.GetIndexName(elastic.NodeConfig{}), []byte(queryDsl))
 	return err
 }

@@ -24,9 +24,24 @@ const aggsParams = [
 ];
 
 const details = [
-  { title: "Metrics", component: Metrics, key: "metrics" },
-  { title: "TopN", component: MetricTopN, key: "topN" },
-  { title: "Infos", component: Infos, key: "infos" },
+  {
+    title: "Metrics",
+    titleId: "overview.detail.metrics",
+    component: Metrics,
+    key: "metrics",
+  },
+  {
+    title: "TopN",
+    titleId: "cluster.monitor.tabs.topn",
+    component: MetricTopN,
+    key: "topN",
+  },
+  {
+    title: "Infos",
+    titleId: "overview.detail.infos",
+    component: Infos,
+    key: "infos",
+  },
 ];
 
 const sideSorterOptions = [

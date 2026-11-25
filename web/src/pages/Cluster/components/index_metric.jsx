@@ -17,11 +17,11 @@ import styles from "../Metrics.scss";
 import { Spin, Radio, Select, Skeleton } from "antd";
 import { formatter, getFormatter, getNumFormatter } from "@/utils/format";
 import "./node_metric.scss";
-import { calculateBounds } from "@/components/vendor/data/common/query/timefilter";
 import moment from "moment";
 import { formatMessage } from "umi/locale";
 import MetricContainer from "./metric_container";
 import _ from "lodash";
+import { formatTimeRange } from "@/lib/elasticsearch/util";
 
 const gorupOrder = [
   "operations",
@@ -64,14 +64,7 @@ export default ({
     });
   };
   const queryParams = React.useMemo(() => {
-    const bounds = calculateBounds({
-      from: timeRange.min,
-      to: timeRange.max,
-    });
-    let newParams = {
-      min: bounds.min.valueOf(),
-      max: bounds.max.valueOf(),
-    };
+    const newParams = formatTimeRange(timeRange);
     if (param.top) {
       newParams.top = param.top;
     }
@@ -92,8 +85,40 @@ export default ({
     const grpMetrics = _.groupBy(value?.metrics, "group");
     let metrics = {};
     Object.keys(grpMetrics).forEach((k) => {
-      metrics[k] = (grpMetrics[k] || [])
-        .sort((a, b) => a.order - b.order)
+      const items = (grpMetrics[k] || []).sort((a, b) => a.order - b.order);
+      // Fill gaps for auto_date_histogram bar charts
+      items.forEach((metric) => {
+        if (!metric.lines) return;
+        metric.lines.forEach((line) => {
+          if (!line.data || line.data.length < 2 || line.type !== "Bar") return;
+          const timestamps = [...new Set(line.data.map((d) => d.x))].sort(
+            (a, b) => a - b
+          );
+          if (timestamps.length < 2) return;
+          const gaps = [];
+          for (let i = 1; i < timestamps.length; i++) {
+            gaps.push(timestamps[i] - timestamps[i - 1]);
+          }
+          gaps.sort((a, b) => a - b);
+          const intervalMs = gaps[Math.floor(gaps.length / 2)];
+          if (!intervalMs || intervalMs <= 0) return;
+          const existingSet = new Set(timestamps.map(String));
+          const filledData = [...line.data];
+          const startTs = timestamps[0];
+          const endTs = timestamps[timestamps.length - 1];
+          const maxSlots = 200;
+          let count = 0;
+          for (let ts = startTs; ts <= endTs && count < maxSlots; ts += intervalMs) {
+            count++;
+            if (!existingSet.has(String(ts))) {
+              filledData.push({ x: ts, y: 100, g: "empty" });
+            }
+          }
+          filledData.sort((a, b) => a.x - b.x || a.g.localeCompare(b.g));
+          line.data = filledData;
+        });
+      });
+      metrics[k] = items;
     });
     return metrics;
   }, [value]);
@@ -310,11 +335,11 @@ export default ({
                                       splitAccessors,
                                     }) => {
                                       const g = splitAccessors.get("g");
-                                      if (
-                                        yAccessor === "y" &&
-                                        ["red", "yellow", "green"].includes(g)
-                                      ) {
-                                        return g;
+                                      if (yAccessor === "y") {
+                                        if (g === "empty") return "#D3DAE6";
+                                        if (["red", "yellow", "green"].includes(g)) {
+                                          return g;
+                                        }
                                       }
                                       return null;
                                     }}

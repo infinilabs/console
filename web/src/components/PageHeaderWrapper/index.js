@@ -31,7 +31,7 @@ const PageHeaderWrapper = ({
                 <FormattedMessage id={item.locale} defaultMessage={item.name} />
               );
             }
-            return item.name;
+            return item.name || item.title;
           }}
         />
       )}

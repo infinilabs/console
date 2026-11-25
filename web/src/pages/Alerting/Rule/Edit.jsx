@@ -13,18 +13,20 @@ export default Form.create({ name: "rule_form_edit" })((props) => {
   const { loading, error, value } = useFetch(
     `/alerting/rule/${ruleID}`,
     null,
-    []
+    [ruleID]
   );
 
   const onSaveClick = useCallback(
     async (values) => {
       setSubmitLoading(true)
-      if (value._source.alert_objects) {
-        delete value._source.alert_objects;
+      const sourceValue = { ...(value?._source || {}) };
+      if (sourceValue.alert_objects) {
+        delete sourceValue.alert_objects;
       }
       const newVal = {
-        ...value._source,
+        ...sourceValue,
         ...values[0],
+        updated: new Date().toISOString(),
       };
 
       const saveRes = await request(`/alerting/rule/${ruleID}`, {

@@ -1,5 +1,6 @@
 import { Button, Input, Select, Icon } from "antd";
 import { useEffect, useMemo, useState } from "react";
+import { formatMessage } from "umi/locale";
 const InputGroup = Input.Group;
 const Option = Select.Option;
 
@@ -75,12 +76,16 @@ const ApiPrivilegeField = ({ value = [], onChange, options }) => {
           marginTop: 10,
         }}
       >
-        <div style={{ width: "20%" }}>Category</div>
-        <div style={{ width: "80%" }}>Privilege</div>
+        <div style={{ width: "20%" }}>
+          {formatMessage({ id: "system.role.data.api_privilege.category" })}
+        </div>
+        <div style={{ width: "80%" }}>
+          {formatMessage({ id: "system.role.data.api_privilege.privilege" })}
+        </div>
       </div>
       {apiPrivilegeEl}
       <Button icon="plus" type="primary" onClick={onAddClick}>
-        Add
+        {formatMessage({ id: "form.button.add" })}
       </Button>
     </div>
   );

@@ -1,5 +1,6 @@
-import { loader } from "@monaco-editor/react";
+import Editor, { loader, monaco } from "@monaco-editor/react";
 
 loader.config({ paths: { vs: "/static/monaco-editor/min/vs" } });
 
-export {default as Editor} from "@monaco-editor/react"; 
+export { Editor, monaco };
+export default Editor;

@@ -52,6 +52,7 @@ export function formatESSearchResult(esResp) {
       took: took,
       total: total,
       data: [],
+      aggregations: esResp.aggregations,
     };
   }
   let dataArr = [];
@@ -161,12 +162,50 @@ export function extractClusterIDFromURL() {
 }
 
 export function formatTimeRange(timeRange) {
-  const bounds = calculateBounds({
-    from: timeRange.min,
-    to: timeRange.max,
-  });
+  const rawMin = `${timeRange?.min ?? ""}`.trim().toLowerCase();
+  const rawMax = `${timeRange?.max ?? ""}`.trim().toLowerCase();
+  if (rawMin === "auto" || rawMax === "auto") {
+    return {
+      min: "auto",
+      max: "auto",
+    };
+  }
+  let bounds;
+  try {
+    bounds = calculateBounds({
+      from: timeRange?.min,
+      to: timeRange?.max,
+    });
+  } catch (e) {
+    bounds = null;
+  }
+  if (!bounds || !Number.isFinite(bounds.min?.valueOf?.()) || !Number.isFinite(bounds.max?.valueOf?.())) {
+    const min = timeRange?.min;
+    const max = timeRange?.max;
+    return {
+      min: Number.isFinite(min) ? min : Date.now() - 15 * 60 * 1000,
+      max: Number.isFinite(max) ? max : Date.now(),
+    };
+  }
   return {
     min: bounds.min.valueOf(),
     max: bounds.max.valueOf(),
   };
+}
+
+export function escapeLuceneQueryTerm(term = "") {
+  return `${term}`.replace(/([+\-=&|><!(){}\[\]^"~*?:\\/])/g, "\\$1");
+}
+
+export function buildContainsQueryString(keyword = "") {
+  const normalizedKeyword = `${keyword}`.trim();
+  if (!normalizedKeyword) {
+    return "";
+  }
+
+  return normalizedKeyword
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((term) => `*${escapeLuceneQueryTerm(term)}*`)
+    .join(" AND ");
 }

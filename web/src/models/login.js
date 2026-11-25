@@ -1,29 +1,140 @@
 import { routerRedux } from "dva/router";
 import { stringify } from "qs";
-import { fakeAccountLogin, getFakeCaptcha } from "@/services/api";
-import { setAuthority } from "@/utils/authority";
+import {
+  fakeAccountLogin,
+  fakeAccountLogout,
+  getAccountLoginChallenge,
+  getFakeCaptcha,
+} from "@/services/api";
+import {
+  getAuthEnabled,
+  setAuthority,
+  syncAuthorityFromResponse,
+} from "@/utils/authority";
 import { getPageQuery } from "@/utils/utils";
 import { reloadAuthorized } from "@/utils/Authorized";
 import * as CurrentUser from "@/utils/CurrentUser";
-import { getAuthEnabled } from "@/utils/authority";
+import { buildPasswordProof } from "@/utils/password";
+import {
+  clearStoredLoginResponse,
+  storeLoginResponse,
+} from "@/utils/auth_session";
+import { formatMessage } from "umi/locale";
+
+let logoutInProgress = false;
+
+const invalidCredentialReasons = [
+  "invalid login or password",
+  "invalid username or password",
+  "authentication_exception",
+  "user not found",
+];
+
+const getLoginErrorMessage = (response) => {
+  const reason = response?.error?.reason || response?.message || "";
+  const normalizedReason = String(reason || "").toLowerCase();
+
+  if (normalizedReason === "invalid bootstrap password") {
+    return formatMessage({
+      id: "guide.initialization.finish.error.invalid_bootstrap_password",
+    });
+  }
+
+  if (
+    [401, 403].includes(response?.httpStatus) ||
+    invalidCredentialReasons.some((item) => normalizedReason.includes(item))
+  ) {
+    return formatMessage({ id: "app.login.message-invalid-credentials" });
+  }
+
+  if (response?.errorObject?.key) {
+    return formatMessage({
+      id: response.errorObject.key,
+      defaultMessage:
+        reason || formatMessage({ id: "app.login.message-invalid-credentials" }),
+    });
+  }
+
+  return reason || formatMessage({ id: "app.login.message-invalid-credentials" });
+};
+
+const normalizeLoginResponse = (response, type) => {
+  if (response?.status === "ok") {
+    return response;
+  }
+
+  return {
+    ...(response && typeof response === "object" ? response : {}),
+    status: "error",
+    type,
+    message: getLoginErrorMessage(response),
+  };
+};
 
 export default {
   namespace: "login",
 
   state: {
     status: undefined,
+    message: "",
   },
 
   effects: {
     *login({ payload }, { call, put }) {
-      const response = yield call(fakeAccountLogin, payload);
+      const username = payload.username || payload.userName;
+      const passwordPayload = {
+        userName: username,
+        password: payload.password,
+        type: payload.type,
+      };
+      let loginPayload = null;
+      let response;
+
+      try {
+        const challenge = yield call(getAccountLoginChallenge, { username });
+
+        if (challenge?.status === "ok" && challenge?.method === "challenge") {
+          const proof = yield call(buildPasswordProof, {
+            password: payload.password,
+            username,
+            challengeId: challenge.challenge_id,
+            nonce: challenge.nonce,
+            salt: challenge.salt,
+            iterations: challenge.iterations,
+          });
+          loginPayload = {
+            userName: username,
+            type: payload.type,
+            challenge_id: challenge.challenge_id,
+            proof,
+          };
+        } else if (challenge?.status === "ok" && challenge?.method === "plain") {
+          // Keep plaintext fallback only when the backend explicitly asks for it.
+          loginPayload = passwordPayload;
+        } else {
+          throw new Error(
+            challenge?.error?.reason || challenge?.message || "unsupported login challenge response"
+          );
+        }
+
+        response = yield call(fakeAccountLogin, loginPayload);
+      } catch (error) {
+        response = {
+          status: "error",
+          error: {
+            reason: error?.message || "",
+          },
+        };
+      }
+
+      response = normalizeLoginResponse(response, payload.type);
       yield put({
         type: "changeLoginStatus",
         payload: response,
       });
       // Login successfully
       if (response.status === "ok") {
-        setAuthority(response.privilege);
+        syncAuthorityFromResponse(response);
         reloadAuthorized();
         if (getAuthEnabled()) {
           yield put({
@@ -33,7 +144,7 @@ export default {
             },
           });
         }
-        localStorage.setItem("login-response", JSON.stringify(response));
+        storeLoginResponse(response);
         const urlParams = new URL(window.location.href);
         const params = getPageQuery();
         let { redirect } = params;
@@ -57,41 +168,55 @@ export default {
       yield call(getFakeCaptcha, payload);
     },
 
-    *logout(_, { put }) {
-      yield put({
-        type: "changeLoginStatus",
-        payload: {
-          status: false,
-          currentAuthority: "guest",
-        },
-      });
-      localStorage.removeItem("login-response");
-      reloadAuthorized();
-      //clear selected cluster state
-      yield put({
-        type: "global/saveData",
-        payload: {
-          selectedClusterID: null,
-        },
-      });
-      yield put(
-        routerRedux.push({
-          pathname: "/user/login",
-          search: stringify({
-            redirect: window.location.href,
-          }),
-        })
-      );
+    *logout({ payload = {} }, { call, put }) {
+      if (logoutInProgress) {
+        return;
+      }
+      logoutInProgress = true;
+      try {
+        if (payload.skipServerLogout !== true) {
+          yield call(fakeAccountLogout);
+        }
+        yield put({
+          type: "changeLoginStatus",
+          payload: {
+            status: false,
+            currentAuthority: "guest",
+          },
+        });
+        clearStoredLoginResponse();
+        reloadAuthorized();
+        //clear selected cluster state
+        yield put({
+          type: "global/saveData",
+          payload: {
+            selectedClusterID: null,
+          },
+        });
+        yield put(
+          routerRedux.push({
+            pathname: "/user/login",
+            search: stringify({
+              redirect: window.location.href,
+            }),
+          })
+        );
+      } finally {
+        logoutInProgress = false;
+      }
     },
   },
 
   reducers: {
     changeLoginStatus(state, { payload }) {
-      setAuthority(payload.currentAuthority);
+      if (typeof payload?.currentAuthority !== "undefined") {
+        setAuthority(payload.currentAuthority);
+      }
       return {
         ...state,
         status: payload.status,
         type: payload.type,
+        message: payload.message || "",
       };
     },
   },

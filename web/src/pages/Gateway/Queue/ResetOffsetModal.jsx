@@ -36,7 +36,9 @@ const ReestOffsetModal = Form.create({ name: "resetoffset" })((props) => {
         }
       );
       if (resetRes && resetRes.acknowledged) {
-        message.success("reset offset succeed");
+        message.success(
+          formatMessage({ id: "gateway.queue.consumer.reset_offset.success" })
+        );
         hideModal();
         handleRefresh()
       }
@@ -63,7 +65,7 @@ const ReestOffsetModal = Form.create({ name: "resetoffset" })((props) => {
   return (
     <Modal
       destroyOnClose={true}
-      title="Consumer Reset Offset"
+      title={formatMessage({ id: "gateway.queue.consumer.reset_offset.title" })}
       visible={visible}
       onOk={handleOk}
       confirmLoading={confirmLoading}
@@ -71,27 +73,34 @@ const ReestOffsetModal = Form.create({ name: "resetoffset" })((props) => {
     >
       <div style={{display:"flex", justifyContent:"space-between", gap: "15px", flexWrap: "wrap", marginBottom: 10}}>
         <span>
-          <strong>ID:</strong>
+          <strong>{formatMessage({ id: "table.field.id" })}:</strong>
           {record?.id}
         </span>
         <span>
-          <strong>Group:</strong>
+          <strong>{formatMessage({ id: "gateway.queue.consumer.field.group" })}:</strong>
           {record?.group}
         </span>
         <span>
-          <strong>Name:</strong>
+          <strong>{formatMessage({ id: "table.field.name" })}:</strong>
           {record?.name}
         </span>
         <span>
-          <strong>Offset:</strong>
+          <strong>{formatMessage({ id: "gateway.queue.field.offset" })}:</strong>
           {record?.offset}
         </span>
       </div>
 
       <Form layout="inline">
-        <Form.Item label="New offset">
+        <Form.Item label={formatMessage({ id: "gateway.queue.consumer.reset_offset.new_offset" })}>
           {getFieldDecorator("offset", {
-            rules: [{ required: true, message: "offset is required!" }],
+            rules: [
+              {
+                required: true,
+                message: formatMessage({
+                  id: "gateway.queue.consumer.reset_offset.offset_required",
+                }),
+              },
+            ],
           })(<Input />)}
         </Form.Item>
       </Form>

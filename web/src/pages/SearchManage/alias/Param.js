@@ -195,7 +195,7 @@ class Param extends PureComponent {
     {
       title: '操作',
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.name}>
           <a onClick={() => this.handleUpdateModalVisible(true, record)}>别名设置</a>
           <Divider type="vertical" />
           <a onClick={() => {
@@ -391,7 +391,7 @@ class Param extends PureComponent {
       handleUpdate: this.handleUpdate,
     };
     return (
-      <Fragment>
+      <Fragment key="param">
         <Card bordered={false}>
           <div className={styles.tableList}>
             <div className={styles.tableListForm}>{this.renderForm()}</div>

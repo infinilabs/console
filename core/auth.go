@@ -57,7 +57,7 @@ func (handler Handler) RequireLogin(h httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 		if api.IsAuthEnable() {
-			claims, err := security.ValidateLogin(r.Header.Get("Authorization"))
+			claims, err := security.ValidateLoginFromRequest(r)
 			if err != nil {
 				handler.WriteError(w, err.Error(), http.StatusUnauthorized)
 				return
@@ -77,7 +77,7 @@ func (handler Handler) RequirePermission(h httprouter.Handle, permissions ...str
 		}
 
 		if api.IsAuthEnable() {
-			claims, err := security.ValidateLogin(r.Header.Get("Authorization"))
+			claims, err := security.ValidateLoginFromRequest(r)
 			if err != nil {
 				handler.WriteError(w, err.Error(), http.StatusUnauthorized)
 				return
@@ -94,12 +94,32 @@ func (handler Handler) RequirePermission(h httprouter.Handle, permissions ...str
 	}
 }
 
+func RequestUsesSecureTransport(req *http.Request) bool {
+	return api.RequestUsesSecureTransport(req, api.SecureTransportOptions{TrustForwardHeaders: true})
+}
+
+func (handler Handler) RequireSecureTransport(h httprouter.Handle) httprouter.Handle {
+	return handler.Handler.RequireSecureTransport(h, api.SecureTransportOptions{TrustForwardHeaders: true})
+}
+
+func RequireSecureTransport(h httprouter.Handle) httprouter.Handle {
+	return api.RequireSecureTransport(h, api.SecureTransportOptions{TrustForwardHeaders: true})
+}
+
+func (handler Handler) RequireReplayProtection(h httprouter.Handle) httprouter.Handle {
+	return handler.Handler.RequireReplayProtection(h)
+}
+
+func RequireReplayProtection(h httprouter.Handle) httprouter.Handle {
+	return api.RequireReplayProtection(h)
+}
+
 func (handler Handler) RequireClusterPermission(h httprouter.Handle, permissions ...string) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 		if api.IsAuthEnable() {
 			id := ps.ByName("id")
-			claims, err := security.ValidateLogin(r.Header.Get("Authorization"))
+			claims, err := security.ValidateLoginFromRequest(r)
 			if err != nil {
 				handler.WriteError(w, err.Error(), http.StatusUnauthorized)
 				return
@@ -119,9 +139,9 @@ func (handler Handler) RequireClusterPermission(h httprouter.Handle, permissions
 
 func (handler Handler) GetCurrentUser(req *http.Request) string {
 	if api.IsAuthEnable() {
-		claims, ok := req.Context().Value("user").(*security.UserClaims)
-		if ok {
-			return claims.Username
+		user, err := security.FromUserContext(req.Context())
+		if err == nil && user != nil {
+			return user.Username
 		}
 	}
 	return ""

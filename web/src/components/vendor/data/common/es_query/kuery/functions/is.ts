@@ -29,6 +29,21 @@ import * as ast from '../ast';
 import * as literal from '../node_types/literal';
 import * as wildcard from '../node_types/wildcard';
 
+function getAllSearchableFieldNames(indexPattern?: IIndexPattern) {
+  if (!indexPattern?.fields) {
+    return [];
+  }
+  return indexPattern.fields
+    .filter(
+      (field) =>
+        field.searchable &&
+        !field.scripted &&
+        !field.subType?.nested &&
+        field.name !== '_source'
+    )
+    .map((field) => field.name);
+}
+
 export function buildNodeParams(fieldName: string, value: any, isPhrase: boolean = false) {
   if (isUndefined(fieldName)) {
     throw new Error('fieldName is a required argument');
@@ -66,9 +81,11 @@ export function toElasticsearchQuery(
   const value = !isUndefined(valueArg) ? ast.toElasticsearchQuery(valueArg) : valueArg;
   const type = isPhraseArg.value ? 'phrase' : 'best_fields';
   if (fullFieldNameArg.value === null) {
+    const searchableFields = getAllSearchableFieldNames(indexPattern);
     if (valueArg.type === 'wildcard') {
       return {
         query_string: {
+          ...(searchableFields.length > 0 ? { fields: searchableFields } : {}),
           query: wildcard.toQueryStringQuery(valueArg),
         },
       };
@@ -79,7 +96,7 @@ export function toElasticsearchQuery(
         type,
         query: value,
         lenient: true,
-        fields: "*", // adapter es 2.x
+        ...(searchableFields.length > 0 ? { fields: searchableFields } : { fields: "*" }), // adapter es 2.x
       },
     };
   }

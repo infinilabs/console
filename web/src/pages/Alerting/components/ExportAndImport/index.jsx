@@ -121,6 +121,17 @@ export default Form.create()((props) => {
     });
   };
 
+  const clearUploadState = () => {
+    setUploadState((prev) => ({
+      ...(prev || {}),
+      fileList: [],
+      data: undefined,
+    }));
+    form.setFieldsValue({
+      upload: [],
+    });
+  };
+
   const renderExportBody = () => {
     const associatedTypes = types
       .filter((item) => !item.isMain)
@@ -157,11 +168,13 @@ export default Form.create()((props) => {
     if (Array.isArray(e)) {
       return e;
     }
-    setUploadState({
-      ...(uploadState || {}),
-      fileList: [e.file],
-    });
-    return e && e.fileList;
+    const fileList = e?.fileList ? e.fileList.slice(-1) : [];
+    setUploadState((prev) => ({
+      ...(prev || {}),
+      fileList,
+      ...(fileList.length === 0 ? { data: undefined } : {}),
+    }));
+    return fileList;
   };
 
   const renderImportBody = () => {
@@ -170,7 +183,16 @@ export default Form.create()((props) => {
       fileList: uploadState?.fileList || [],
       multiple: false,
       name: "file",
+      onRemove() {
+        clearUploadState();
+        return true;
+      },
       onChange(info) {
+        const fileList = info?.fileList ? info.fileList.slice(-1) : [];
+        if (info.file.status === "removed" || fileList.length === 0) {
+          clearUploadState();
+          return;
+        }
         if (info.file.status !== "uploading") {
           //cat json content
           let reader = new FileReader();
@@ -178,20 +200,21 @@ export default Form.create()((props) => {
             const jsonStr = e.target.result;
             try {
               const jsonObj = JSON.parse(jsonStr);
-              setUploadState({
-                ...(uploadState || {}),
+              setUploadState((prev) => ({
+                ...(prev || {}),
+                fileList,
                 data: jsonObj,
-              });
+              }));
             } catch {
-              message.error(`${info.file.name} is an invalid json file!`);
+              message.error(formatMessage({ id: "alert.import.upload.invalid_json" }));
             }
           };
           reader.readAsText(info.file.originFileObj);
         }
         if (info.file.status === "done") {
-          message.success(`${info.file.name} file uploaded successfully`);
+          message.success(formatMessage({ id: "alert.import.upload.success" }));
         } else if (info.file.status === "error") {
-          message.error(`${info.file.name} file upload failed.`);
+          message.error(formatMessage({ id: "alert.import.upload.failed" }));
         }
       },
     };
@@ -212,7 +235,7 @@ export default Form.create()((props) => {
             rules: [
               {
                 required: true,
-                message: "Please select file",
+                message: formatMessage({ id: "alert.import.select_file" }),
               },
             ],
           })(
@@ -226,7 +249,7 @@ export default Form.create()((props) => {
         </Form.Item>
         {data && (
           <Editor
-            height="calc(100vh - 110px - 70px - 48px)"
+            height="55vh"
             language="json"
             theme="light"
             value={data}
@@ -333,26 +356,28 @@ export default Form.create()((props) => {
         bodyStyle={{
           padding: 0,
           height: "calc(100vh - 110px)",
-          overflow: "auto",
+          overflow: "hidden",
         }}
         destroyOnClose
       >
-        <div style={{ padding: 24, height: "100%" }}>
-          <Form {...FORM_ITEM_LAYOUT} colon={false}>
-            {body}
-          </Form>
-        </div>
-        <div className={styles.actions}>
-          <Button style={{ marginRight: 12 }} onClick={onClose}>
-            {formatMessage({ id: "form.button.cancel" })}
-          </Button>
-          <Button
-            type="primary"
-            loading={loading}
-            onClick={() => onSubmit(actionKey)}
-          >
-            {formatMessage({ id: "form.button.submit" })}
-          </Button>
+        <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+          <div style={{ padding: 24, flex: 1, overflow: "visible" }}>
+            <Form {...FORM_ITEM_LAYOUT} colon={false}>
+              {body}
+            </Form>
+          </div>
+          <div className={styles.actions}>
+            <Button style={{ marginRight: 12 }} onClick={onClose}>
+              {formatMessage({ id: "form.button.cancel" })}
+            </Button>
+            <Button
+              type="primary"
+              loading={loading}
+              onClick={() => onSubmit(actionKey)}
+            >
+              {formatMessage({ id: "form.button.submit" })}
+            </Button>
+          </div>
         </div>
       </Drawer>
     </>

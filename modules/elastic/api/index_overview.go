@@ -284,18 +284,16 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
-	indexIDs = indexIDs[0:1]
 	// map indexIDs(cluster_id:index_name => cluster_uuid:indexName)
 	var (
 		indexIDM          = map[string]string{}
 		newIndexIDs       []interface{}
 		clusterIndexNames = map[string][]string{}
 	)
-	indexID := indexIDs[0]
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchIndexInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -305,21 +303,26 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 		firstClusterID string
 		firstIndexName string
 	)
-	if v, ok := indexID.(string); ok {
+	for i, indexID := range indexIDs {
+		v, ok := indexID.(string)
+		if !ok {
+			h.WriteError(w, fmt.Sprintf("invalid index_id: %v", indexID), http.StatusInternalServerError)
+			return
+		}
 		parts := strings.Split(v, ":")
 		if len(parts) != 2 {
 			h.WriteError(w, fmt.Sprintf("invalid index_id: %s", indexID), http.StatusInternalServerError)
 			return
 		}
-		firstClusterID, firstIndexName = parts[0], parts[1]
-		if GetMonitorState(firstClusterID) == elastic.ModeAgentless {
-			h.APIHandler.FetchIndexInfo(w, ctx, indexIDs)
-			return
+		clusterID, indexName := parts[0], parts[1]
+		if i == 0 {
+			firstClusterID, firstIndexName = clusterID, indexName
+			if GetMonitorState(firstClusterID) == elastic.ModeAgentless {
+				h.APIHandler.FetchIndexInfo(w, ctx, indexIDs)
+				return
+			}
 		}
-		clusterIndexNames[firstClusterID] = append(clusterIndexNames[firstClusterID], firstIndexName)
-	} else {
-		h.WriteError(w, fmt.Sprintf("invalid index_id: %v", indexID), http.StatusInternalServerError)
-		return
+		clusterIndexNames[clusterID] = append(clusterIndexNames[clusterID], indexName)
 	}
 	for clusterID, indexNames := range clusterIndexNames {
 		clusterUUID, err := adapter.GetClusterUUID(clusterID)
@@ -333,11 +336,15 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 			indexIDM[fmt.Sprintf("%s:%s", clusterID, indexName)] = newIndexID
 		}
 	}
+	if len(newIndexIDs) == 0 {
+		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
+		return
+	}
 	q1 := orm.Query{WildcardIndex: true}
 	q1.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
 		orm.Eq("metadata.name", "shard_stats"),
-		orm.Eq("metadata.labels.index_id", newIndexIDs[0]),
+		orm.In("metadata.labels.index_id", newIndexIDs),
 	)
 	q1.Collapse("metadata.labels.shard_id")
 	q1.AddSort("timestamp", orm.DESC)
@@ -359,6 +366,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 			indexID, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "index_id"}, hitM)
 			indexName, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "index_name"}, hitM)
 			primary, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "routing", "primary"}, hitM)
+			isPrimary, _ := parseBoolValue(primary)
 			if v, ok := indexID.(string); ok {
 				if _, ok = summaryMap[v]; !ok {
 					summaryMap[v] = &ShardsSummary{}
@@ -367,19 +375,19 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 				if iv, ok := indexName.(string); ok {
 					indexInfo.Index = iv
 				}
-				if count, ok := shardDocCount.(float64); ok && primary == true {
-					indexInfo.DocsCount += int64(count)
+				if count, ok := parseInt64Value(shardDocCount); ok && isPrimary {
+					indexInfo.DocsCount += count
 				}
-				if deleted, ok := shardDocDeleted.(float64); ok && primary == true {
-					indexInfo.DocsDeleted += int64(deleted)
+				if deleted, ok := parseInt64Value(shardDocDeleted); ok && isPrimary {
+					indexInfo.DocsDeleted += deleted
 				}
-				if storeSize, ok := storeInBytes.(float64); ok {
-					indexInfo.StoreInBytes += int64(storeSize)
-					if primary == true {
-						indexInfo.PriStoreInBytes += int64(storeSize)
+				if storeSize, ok := parseInt64Value(storeInBytes); ok {
+					indexInfo.StoreInBytes += storeSize
+					if isPrimary {
+						indexInfo.PriStoreInBytes += storeSize
 					}
 				}
-				if primary == true {
+				if isPrimary {
 					indexInfo.Shards++
 				} else {
 					indexInfo.Replicas++
@@ -388,10 +396,88 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 			}
 		}
 	}
+	missingIndexIDs := make([]interface{}, 0)
+	for _, idx := range newIndexIDs {
+		if idxStr, ok := idx.(string); ok {
+			if _, exists := summaryMap[idxStr]; !exists {
+				missingIndexIDs = append(missingIndexIDs, idxStr)
+			}
+		}
+	}
+	if len(missingIndexIDs) > 0 {
+		q2 := orm.Query{WildcardIndex: true}
+		q2.Conds = orm.And(
+			orm.Eq("metadata.category", "elasticsearch"),
+			orm.Eq("metadata.name", "index_stats"),
+			orm.In("metadata.labels.index_id", missingIndexIDs),
+		)
+		q2.Collapse("metadata.labels.index_id")
+		q2.AddSort("timestamp", orm.DESC)
+		q2.Size = len(missingIndexIDs)
+		err, indexResults := orm.Search(&event.Event{}, &q2)
+		if err != nil {
+			h.WriteJSON(w, util.MapStr{
+				"error": err.Error(),
+			}, http.StatusInternalServerError)
+			return
+		}
+		for _, v := range indexResults.Result {
+			result, ok := v.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			indexIDVal, ok := util.GetMapValueByKeys([]string{"metadata", "labels", "index_id"}, result)
+			if !ok {
+				continue
+			}
+			indexIDStr, ok := indexIDVal.(string)
+			if !ok {
+				continue
+			}
+			if _, exists := summaryMap[indexIDStr]; !exists {
+				summaryMap[indexIDStr] = &ShardsSummary{}
+			}
+			summary := summaryMap[indexIDStr]
+			if docs, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "total", "docs"}, result); ok {
+				if docsM, ok := docs.(map[string]interface{}); ok {
+					if count, ok := parseInt64Value(docsM["count"]); ok {
+						summary.DocsCount = count
+					}
+					if deleted, ok := parseInt64Value(docsM["deleted"]); ok {
+						summary.DocsDeleted = deleted
+					}
+				}
+			}
+			if indexInfo, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "index_info"}, result); ok {
+				if infoM, ok := indexInfo.(map[string]interface{}); ok {
+					if idxName, ok := infoM["index"].(string); ok {
+						summary.Index = idxName
+					}
+					if shards, ok := parseInt64Value(infoM["shards"]); ok {
+						summary.Shards = int(shards)
+					}
+					if replicas, ok := parseInt64Value(infoM["replicas"]); ok {
+						summary.Replicas = int(replicas)
+					}
+					if storeSize, ok := infoM["store_size"].(string); ok {
+						if storeInBytes, err := util.ToBytes(storeSize); err == nil {
+							summary.StoreInBytes = int64(storeInBytes)
+						}
+					}
+					if priStoreSize, ok := infoM["pri_store_size"].(string); ok {
+						if priStoreInBytes, err := util.ToBytes(priStoreSize); err == nil {
+							summary.PriStoreInBytes = int64(priStoreInBytes)
+						}
+					}
+				}
+			}
+			summary.Timestamp = result["timestamp"]
+		}
+	}
 
 	statusMetric, err := h.GetIndexStatusOfRecentDay(firstClusterID, firstIndexName)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchIndexInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -544,7 +630,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 	}
 	metrics, err := h.getMetrics(ctx, term_level, query, nodeMetricItems, bucketSize)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchIndexInfo failed: %v", err)
 		h.WriteError(w, err, http.StatusInternalServerError)
 	}
 	indexMetrics := map[string]util.MapStr{}
@@ -630,7 +716,7 @@ func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps h
 	}
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetIndexInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -680,20 +766,21 @@ func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps h
 			resultM, ok := row.(map[string]interface{})
 			if ok {
 				primary, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "routing", "primary"}, resultM)
+				isPrimary, _ := parseBoolValue(primary)
 				storeInBytes, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "store", "size_in_bytes"}, resultM)
 				if docs, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "docs", "count"}, resultM); ok {
 					//summary["docs"] = docs
-					if v, ok := docs.(float64); ok && primary == true {
-						shardSum.DocsCount += int64(v)
+					if v, ok := parseInt64Value(docs); ok && isPrimary {
+						shardSum.DocsCount += v
 					}
 				}
-				if storeSize, ok := storeInBytes.(float64); ok {
-					shardSum.StoreInBytes += int64(storeSize)
-					if primary == true {
-						shardSum.PriStoreInBytes += int64(storeSize)
+				if storeSize, ok := parseInt64Value(storeInBytes); ok {
+					shardSum.StoreInBytes += storeSize
+					if isPrimary {
+						shardSum.PriStoreInBytes += storeSize
 					}
 				}
-				if primary == true {
+				if isPrimary {
 					shardSum.Shards++
 				} else {
 					shardSum.Replicas++
@@ -726,7 +813,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 	}
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetIndexShards failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -741,7 +828,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 	q1.AddSort("timestamp", orm.DESC)
 	err, result := orm.Search(&event.Event{}, &q1)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetIndexShards failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -755,7 +842,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 		)
 		err, nodesResult := orm.Search(elastic.NodeConfig{}, q)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("GetIndexShards failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -771,7 +858,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 		}
 		qps, err := h.getShardQPS(clusterID, "", indexName, 20)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("GetIndexShards failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -789,7 +876,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 				}
 				shardV, err := source.GetValue("payload.elasticsearch.shard_stats")
 				if err != nil {
-					log.Error(err)
+					log.Errorf("GetIndexShards failed: %v", err)
 					continue
 				}
 				shardInfo["id"], _ = source.GetValue("metadata.labels.node_id")
@@ -828,8 +915,8 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		h.APIHandler.GetSingleIndexMetrics(w, req, ps)
 		return
 	}
-	indexName := ps.MustGetParameter("index")
-	if !h.IsIndexAllowed(req, clusterID, indexName) {
+	rawIndexName := ps.MustGetParameter("index")
+	if !h.IsIndexAllowed(req, clusterID, rawIndexName) {
 		h.WriteJSON(w, util.MapStr{
 			"error": http.StatusText(http.StatusForbidden),
 		}, http.StatusForbidden)
@@ -837,7 +924,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	}
 	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleIndexMetrics failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -861,7 +948,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		{
 			"term": util.MapStr{
 				"metadata.labels.index_name": util.MapStr{
-					"value": indexName,
+					"value": rawIndexName,
 				},
 			},
 		},
@@ -886,7 +973,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	}
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, metricType, 60)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleIndexMetrics failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -897,7 +984,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleIndexMetrics failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -940,17 +1027,17 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	metricItems := []*common.MetricItem{}
 	metrics := map[string]*common.MetricItem{}
 	if metricKey == ShardStateMetricKey {
-		shardStateMetric, err := h.getIndexShardsMetric(ctx, clusterID, indexName, min, max, bucketSize, shardID)
+		shardStateMetric, err := h.getIndexShardsMetric(ctx, clusterID, rawIndexName, min, max, bucketSize, shardID)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("GetSingleIndexMetrics failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		metrics["shard_state"] = shardStateMetric
 	} else if metricKey == v1.IndexHealthMetricKey {
-		healthMetric, err := h.GetIndexHealthMetric(ctx, clusterID, indexName, min, max, bucketSize)
+		healthMetric, err := h.GetIndexHealthMetric(ctx, clusterID, rawIndexName, min, max, bucketSize)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("GetSingleIndexMetrics failed: %v", err)
 			h.WriteError(w, err, http.StatusInternalServerError)
 			return
 		}
@@ -1028,7 +1115,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		}
 		metrics, err = h.getSingleIndexMetrics(context.Background(), metricItems, query, bucketSize)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("GetSingleIndexMetrics failed: %v", err)
 			h.WriteError(w, err, http.StatusInternalServerError)
 		}
 	}
@@ -1036,7 +1123,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		if metricItem.HitsTotal > 0 && metricItem.MinBucketSize == 0 {
 			minBucketSize, err := v1.GetMetricMinBucketSize(clusterID, metricType)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("GetSingleIndexMetrics failed: %v", err)
 			} else {
 				metricItem.MinBucketSize = int64(minBucketSize)
 			}
@@ -1128,7 +1215,7 @@ func (h *APIHandler) getIndexShardsMetric(ctx context.Context, id, indexName str
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("getIndexShardsMetric failed: %v", err)
 		return nil, err
 	}
 

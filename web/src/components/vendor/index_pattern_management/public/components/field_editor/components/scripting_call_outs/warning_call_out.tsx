@@ -34,7 +34,7 @@ export const ScriptingWarningCallOut = ({ isVisible = false }: ScriptingWarningC
   const docLinksScriptedFields = useGlobalContext().docLinks?.links//useKibana<IndexPatternManagmentContext>().services.docLinks?.links
     .scriptedFields;
   return isVisible ? (
-    <Fragment>
+    <Fragment key="scriptingWarningCallOut">
       <EuiCallOut
         title={
           "Proceed with caution"

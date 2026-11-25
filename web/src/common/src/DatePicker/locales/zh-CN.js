@@ -1,4 +1,5 @@
 export default {
+  "datepicker.quick_select.auto": "自动",
   "datepicker.quick_select.auto_fit": "自动适配",
   "datepicker.quick_select.today": "今天",
   "datepicker.quick_select.this_week": "这个星期",

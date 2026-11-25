@@ -47,7 +47,7 @@ func (dal *Role) Get(id string) (rbac.Role, error) {
 
 	role := rbac.Role{}
 	role.ID = id
-	_, err := orm.Get(&role)
+	_, err := orm.GetV2(orm.NewContext(), &role)
 	return role, err
 }
 
@@ -68,18 +68,18 @@ func (dal *Role) GetBy(field string, value interface{}) (rbac.Role, error) {
 }
 
 func (dal *Role) Update(role *rbac.Role) error {
-	return orm.Save(nil, role)
+	return orm.Save(orm.NewContext(), role)
 }
 
 func (dal *Role) Create(role *rbac.Role) (string, error) {
 	role.ID = util.GetUUID()
-	return role.ID, orm.Save(nil, role)
+	return role.ID, orm.Save(orm.NewContext(), role)
 }
 
 func (dal *Role) Delete(id string) error {
 	role := rbac.Role{}
 	role.ID = id
-	return orm.Delete(nil, role)
+	return orm.Delete(orm.NewContext(), &role)
 }
 
 func (dal *Role) Search(keyword string, from, size int) (orm.Result, error) {

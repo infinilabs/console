@@ -87,8 +87,9 @@ type GroupSort struct {
 }
 
 type MetricGroupItem struct {
-	Field string `json:"field"`
-	Limit int    `json:"limit"`
+	Field   string `json:"field"`
+	Limit   int    `json:"limit"`
+	Missing string `json:"missing,omitempty"`
 }
 
 func (m *Metric) GenerateExpression() (string, error) {

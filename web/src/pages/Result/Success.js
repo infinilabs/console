@@ -39,7 +39,7 @@ const desc2 = (
 );
 
 const extra = (
-  <Fragment>
+  <Fragment key="extra">
     <div
       style={{
         fontSize: 16,
@@ -115,7 +115,7 @@ const extra = (
 );
 
 const actions = (
-  <Fragment>
+  <Fragment key="actions">
     <Button type="primary">
       <FormattedMessage id="app.result.success.btn-return" defaultMessage="Back to list" />
     </Button>

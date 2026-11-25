@@ -26,6 +26,7 @@ export default {
   "cluster.manage.table.column.node_count": "Nodes",
   "cluster.manage.table.column.endpoint": "Endpoint",
   "cluster.manage.table.column.monitored": "Monitored",
+  "cluster.manage.table.column.monitor_toggle": "Monitoring Status",
   "cluster.manage.table.column.monitor_mode": "Monitor Mode",
   "cluster.manage.table.column.discovery.enabled": "Discovery",
   "cluster.manage.table.column.operation": "Actions",
@@ -34,18 +35,50 @@ export default {
   "cluster.manage.table.column.owner": "Owner",
   "cluster.manage.table.column.area": "Area",
   "cluster.manage.table.column.location": "Location",
+  "cluster.manage.field.tls.label": "Enable TLS",
+  "cluster.manage.field.tags.label": "Tags",
   "cluster.manage.monitored.on": "ON",
   "cluster.manage.monitored.off": "OFF",
   "cluster.manage.metric_collection_mode": "Collect Mode",
+  "cluster.manage.metric_collection_mode.option.agent": "Agent",
+  "cluster.manage.metric_collection_mode.option.agentless": "Agentless",
   "cluster.manage.metric_collection_mode.confirm.title": "Confirm switch metrics collect mode",
   "cluster.manage.metric_collection_mode.confirm.message": "Are you sure you want to switch to {mode} mode?",
   "cluster.manage.metric_collection_mode.warning.large_cluster": "The current cluster has {number_of_nodes} or more nodes. It is strongly recommended to use Agent mode for monitoring.",
   "cluster.manage.metric_collection_mode.confirm.button.ok": "OK",
   "cluster.manage.metric_collection_mode.confirm.button.cancel": "Cancel",
+  "cluster.manage.monitoring.enable.action": "Enable monitoring",
+  "cluster.manage.monitoring.disable.action": "Disable monitoring",
+  "cluster.manage.monitoring.confirm.enable.title": "Are you sure you want to enable monitoring for this cluster?",
+  "cluster.manage.monitoring.confirm.disable.title": "Are you sure you want to disable monitoring for this cluster?",
+  "cluster.manage.monitoring.confirm.cluster": "Cluster: {name}",
+  "cluster.manage.monitoring.confirm.version": "Version: {version}",
+  "cluster.manage.monitoring.confirm.endpoint": "Endpoint: {endpoint}",
+  "cluster.manage.monitoring.notice.unmonitored": "Monitoring is not enabled for this cluster.",
+  "cluster.manage.monitoring.notice.last_collection_time": "Last data collection time: {timestamp}",
+  "cluster.manage.monitoring.notice.enable_button": "Go to enable monitoring",
+  "cluster.manage.monitoring.notice.unavailable_since": "Cluster is not available since: {timestamp}",
+  "cluster.manage.delete.confirm.title": "Are you sure you want to delete this cluster?",
+  "cluster.manage.delete.confirm.cluster": "Cluster: {name}",
+  "cluster.manage.delete.confirm.version": "Version: {version}",
+  "cluster.manage.delete.confirm.endpoint": "Endpoint: {endpoint}",
+  "cluster.manage.agent_credential.tip.auto_create": "When agent collection mode is enabled, Console automatically creates the low-privilege infini-agent user for metrics and log collection. You can still override it with a custom agent credential below if needed.",
+  "cluster.manage.agent_credential.placeholder.auto_create": "Leave empty to auto create or fall back to the platform credential",
+  "cluster.manage.agent_credential.tip.agentless_skip": "Agent credentials are not needed in Agentless mode. Switch to Agent mode first if you want metrics and logs collected through agents.",
+  "cluster.manage.agent_logs_paths.label": "Agent log collection paths",
+  "cluster.manage.agent_logs_paths.placeholder": "Enter one or more log directories",
+  "cluster.manage.agent_logs_paths.tips": "These paths define the default Agent log collection directories for the cluster and are reused by later batch enroll and auto-enroll flows. Leave empty to keep using each node's detected path.logs.",
+  "cluster.manage.config_item.enabled": "Enabled",
+  "cluster.manage.config_item.interval": "Interval",
+  "cluster.manage.config_item.interval.unit": "s",
   "cluster.manage.monitor_configs.cluster_health": "Cluster health",
   "cluster.manage.monitor_configs.cluster_stats": "Cluster stats",
+  "cluster.manage.monitor_configs.tips.cluster_health": "Collects cluster health summary metrics (green/yellow/red).",
+  "cluster.manage.monitor_configs.tips.cluster_stats": "Collects cluster-level statistics from _cluster/stats (nodes, shards, storage, etc.).",
   "cluster.manage.monitor_configs.node_stats": "Node stats",
+  "cluster.manage.monitor_configs.tips.node_stats": "Collects per-node statistics from _nodes/stats (CPU, memory, disk, thread pools, etc.).",
   "cluster.manage.monitor_configs.index_stats": "Index stats",
+  "cluster.manage.monitor_configs.tips.index_stats": "Collects per-index statistics from _stats (documents, size, segments, merges, etc.).",
   "cluster.manage.monitor_configs.index_health": "Index health",
   "cluster.manage.monitor_configs.shard_stats": "Shard stats",
   "cluster.manage.metadata_configs.health_check": "Health check",
@@ -54,6 +87,14 @@ export default {
   "cluster.manage.metadata_configs.metadata_refresh": "Metadata refresh",
   "cluster.manage.metadata_configs.cluster_settings_check":
     "Cluster settings check",
+  "cluster.manage.metadata_configs.tips.health_check":
+    "Periodically checks cluster health/reachability and updates cluster availability status.",
+  "cluster.manage.metadata_configs.tips.node_availability_check":
+    "Performs TCP checks against node addresses. This requires direct TCP access to nodes and cannot work when cluster is reachable only through HTTP proxy.",
+  "cluster.manage.metadata_configs.tips.metadata_refresh":
+    "Periodically refreshes metadata such as nodes and index aliases.",
+  "cluster.manage.metadata_configs.tips.cluster_settings_check":
+    "Periodically fetches and syncs cluster settings (transient/persistent).",
   "cluster.manage.monitor_configs.rollup_node_stats": "Node Stats",
   "cluster.manage.monitor_configs.rollup_index_stats": "Index Stats",
   "cluster.manage.monitor_configs.rollup_cluster_stats": "Cluster Stats",
@@ -88,16 +129,37 @@ export default {
   "cluster.regist.form.verify.required.cluster_name":
     "Please input cluster name!",
   "cluster.regist.form.verify.valid.endpoint":
-    "Please input a domain name or IP address and port number!",
+    "Please input a domain name or IP address, with an optional port number!",
   "cluster.regist.form.verify.required.endpoint": "Please input endpoint!",
+  "cluster.regist.form.label.probe_path": "Agent Path",
+  "cluster.regist.form.placeholder.probe_path": "/_cluster/health",
+  "cluster.regist.form.toggle.probe_path": "Custom Agent Path",
+  "cluster.regist.form.help.probe_path":
+    "Optional. Leave empty to use the default / agent path. Only needed for special cases such as WAF restrictions.",
+  "cluster.regist.form.verify.valid.probe_path":
+    "Agent path must start with /",
   "cluster.regist.form.verify.required.credential":
     "Please select  Agent credential!",
   "cluster.regist.form.verify.required.agent_credential":
-    "Please select credential!",
+    "Please select an Agent credential!",
   "cluster.regist.form.verify.required.auth_username":
     "Please input auth username!",
   "cluster.regist.form.verify.required.auth_password":
     "Please input auth password!",
+  "cluster.regist.try_connect.failed":
+    "Cluster connection failed. Check the endpoint, TLS, and authentication settings.",
+  "cluster.connect.error.health_red":
+    "The target cluster health is red. Console only allows connecting Easysearch clusters when their health is green. Fix the cluster before connecting again.",
+  "cluster.connect.error.tls_mismatch":
+    "The TLS setting does not match the cluster endpoint. Check whether HTTPS should be enabled.",
+  "cluster.connect.error.auth_required":
+    "Authentication is required or the credential is invalid. Check the username, password, or saved credential.",
+  "cluster.connect.error.endpoint_unreachable":
+    "Unable to connect to the cluster endpoint. Check the address, network accessibility, and TLS setting.",
+  "cluster.connect.error.non_es_endpoint":
+    "The endpoint did not return an Elasticsearch-compatible API response. Check that the address and port point to the Elasticsearch API.",
+  "cluster.connect.error.unexpected_status":
+    "The cluster returned an unexpected status. Check the address, TLS setting, and authentication settings.",
   "cluster.regist.form.credential.manual.desc":
     "*The new authentication information will be added to the credential store after saving",
 
@@ -138,6 +200,9 @@ export default {
   "cluster.monitor.topn.area": "Area Metric",
   "cluster.monitor.topn.color": "Color Metric",
   "cluster.monitor.topn.theme": "Theme",
+  "cluster.monitor.rollup.gap": "Rollup Gap",
+  "cluster.monitor.treemap.search_latency_by_index":
+    "Avg search latency by index",
 
   "cluster.monitor.logs.timestamp": "Timestamp",
   "cluster.monitor.logs.type": "Type",

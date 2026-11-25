@@ -19,6 +19,8 @@ const Indices = ({
   clusterID,
   clusterName,
   timeRange,
+  refresh,
+  timeout,
   clusterAvailable,
   bucketSize,
 }) => {
@@ -35,24 +37,6 @@ const Indices = ({
     setShowRealtime(clusterAvailable);
   }, [clusterID, clusterAvailable]);
 
-  const initialQueryParams = {
-    from: 0,
-    size: 20,
-  };
-
-  function reducer(queryParams, action) {
-    switch (action.type) {
-      case "pageSizeChange":
-        return {
-          ...queryParams,
-          size: action.value,
-        };
-      default:
-        throw new Error();
-    }
-  }
-  const [queryParams, dispatch] = React.useReducer(reducer, initialQueryParams);
-
   const {
     loading: indicesLoading,
     error: indicesError,
@@ -60,9 +44,12 @@ const Indices = ({
   } = useFetch(
     `${ESPrefix}/${clusterID}/indices${showRealtime ? "/realtime" : ""}`,
     {
-      queryParams: showRealtime ? {} : formatTimeRange(timeRange),
+      queryParams: {
+        ...(showRealtime ? {} : formatTimeRange(timeRange)),
+        timeout,
+      },
     },
-    [clusterID, timeRange, showRealtime]
+    [clusterID, timeRange, showRealtime, refresh, timeout]
   );
 
   const [hits, hitsTotal] = useMemo(() => {
@@ -96,7 +83,7 @@ const Indices = ({
   const [columns] = useMemo(() => {
     let columns = [
       {
-        title: "Name",
+        title: formatMessage({ id: "overview.column.name" }),
         dataIndex: "index",
         render: (text, record) => (
           <IconText
@@ -118,36 +105,36 @@ const Indices = ({
         className: commonStyles.maxColumnWidth
       },
       {
-        title: "Health",
+        title: formatMessage({ id: "overview.column.health" }),
         dataIndex: "health",
         render: (text, record) => <HealthStatusView status={record?.health} />,
         sorter: (a, b) => sorter.string(a, b, "health"),
       },
       {
-        title: "Status",
+        title: formatMessage({ id: "overview.column.status" }),
         dataIndex: "status",
         sorter: (a, b) => sorter.string(a, b, "status"),
       },
       {
-        title: "Shards",
+        title: formatMessage({ id: "overview.column.shards" }),
         dataIndex: "shards",
         render: (text, record) => <span>{text || 0}</span>,
         sorter: (a, b) => a?.shards - b?.shards,
       },
       {
-        title: "Replicas",
+        title: formatMessage({ id: "overview.column.replicas" }),
         dataIndex: "replicas",
         render: (text, record) => <span>{text || 0}</span>,
         sorter: (a, b) => a?.replicas - b?.replicas,
       },
       {
-        title: "Document Count",
+        title: formatMessage({ id: "overview.column.document_count" }),
         dataIndex: "docs_count",
         render: (text, record) => <span>{formatter.number(text || 0)}</span>,
         sorter: (a, b) => a?.docs_count - b?.docs_count,
       },
       {
-        title: "Data",
+        title: formatMessage({ id: "overview.column.data" }),
         dataIndex: "store_size_bytes",
         render: (text, record) => <span>{record?.store_size || 0}</span>,
         sorter: (a, b) => a?.store_size_bytes - b?.store_size_bytes,
@@ -155,7 +142,7 @@ const Indices = ({
     ];
     if (showRealtime) {
       columns.push({
-        title: "Pri Indexing Rate",
+        title: formatMessage({ id: "overview.column.primary_indexing_rate" }),
         dataIndex: "index_qps",
         render: (text, record) => (
           <span>{text != null ? `${text} /s` : "N/A"}</span>
@@ -163,7 +150,7 @@ const Indices = ({
         sorter: (a, b) => a?.index_qps - b?.index_qps,
       });
       columns.push({
-        title: "Pri Indexing Bytes",
+        title: formatMessage({ id: "overview.column.primary_indexing_bytes" }),
         dataIndex: "index_bytes_qps",
         render: (text, record) => (
           <span>
@@ -173,7 +160,7 @@ const Indices = ({
         sorter: (a, b) => a?.index_bytes_qps - b?.index_bytes_qps,
       });
       columns.push({
-        title: "Search Rate",
+        title: formatMessage({ id: "overview.column.search_rate" }),
         dataIndex: "query_qps",
         render: (text, record) => (
           <span>{text != null ? `${text} /s` : "N/A"}</span>
@@ -182,7 +169,7 @@ const Indices = ({
       });
     } else {
       columns.push({
-        title: "Timestamp",
+        title: formatMessage({ id: "overview.column.timestamp" }),
         dataIndex: "timestamp",
         render: (text, record) => <span>{formatUtcTimeToLocal(text)}</span>,
         sorter: (a, b) => sorter.string(a, b, "timestamp"),
@@ -206,6 +193,8 @@ const Indices = ({
           <FilterSearchGroup
             filterWidth={120}
             filterFields={filterFields}
+            filterValue={searchFilterFields[0] || undefined}
+            searchValue={searchValue}
             onFilterChange={(value) => {
               let val = value ? [value] : [];
               setSearchFilterFields(val);
@@ -267,12 +256,9 @@ const Indices = ({
         columns={columns}
         pagination={{
           size: "small",
-          pageSize: queryParams.size,
+          pageSize: 20,
           total: hitsTotal,
-          showSizeChanger: true,
-          onShowSizeChange: (_, size) => {
-            dispatch({ type: "pageSizeChange", value: size });
-          },
+          showSizeChanger: false,
         }}
         scroll={{x: 'max-content' }}
       />

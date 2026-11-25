@@ -47,7 +47,7 @@ func GetEnvVariables() (map[string]interface{}, error) {
 	if envVariables != nil && envVariables["INFINI_CONSOLE_ENDPOINT"] == nil {
 		buf, err := kv.GetValue("system", []byte("INFINI_CONSOLE_ENDPOINT"))
 		if err != nil {
-			log.Error(err)
+			log.Errorf("get alert env variable from kv failed, bucket=system, key=INFINI_CONSOLE_ENDPOINT: %v", err)
 		}
 		var endpoint string
 		if len(buf) > 0 {

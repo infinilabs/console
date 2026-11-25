@@ -210,7 +210,7 @@ export class ColorFormatEditor extends DefaultFormatEditor<
     ];
 
     return (
-      <Fragment>
+      <Fragment key="colorFormatEditor">
         <EuiBasicTable items={items} columns={columns} />
         <EuiSpacer size="m" />
         <EuiButton iconType="plusInCircle" size="s" onClick={this.addColor}>

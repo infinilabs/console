@@ -31,6 +31,7 @@ import (
 	_ "embed"
 	"github.com/mitchellh/mapstructure"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/orm"
 	"path"
 	"strings"
 
@@ -128,6 +129,10 @@ func loadRemoteRolePermission() {
 	}
 
 	log.Debug("load security permissions,", rbac.RoleMap, rbac.BuiltinRoles)
+	if !orm.HasHandler() {
+		log.Warn("skip loading remote roles, ORM handler is not registered")
+		return
+	}
 
 	res, err := handler.Role.Search("", 0, 1000)
 	if err != nil {

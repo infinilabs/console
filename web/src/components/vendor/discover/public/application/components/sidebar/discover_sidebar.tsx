@@ -92,6 +92,7 @@ export interface DiscoverSidebarProps {
   setIndexPattern: (id: string) => void;
   isClosed: boolean;
   indices: string[];
+  clusterID?: string;
   distinctParams: any;
   onDistinctParamsChange: any;
   whetherToSample?: boolean;
@@ -111,6 +112,7 @@ export function DiscoverSidebar({
   setIndexPattern,
   isClosed,
   indices,
+  clusterID,
   distinctParams,
   onDistinctParamsChange,
   onFieldAgg,

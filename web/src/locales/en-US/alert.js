@@ -216,12 +216,21 @@ export default {
   "alert.rule.table.columnns.category": "Category",
   "alert.rule.table.columnns.tags": "Tags",
   "alert.rule.table.columnns.last_notification_time": "Last notification",
+  "alert.import.submit.success": "Imported successfully",
+  "alert.import.submit.failed": "Import failed",
+  "alert.import.select_file": "Please select file",
+  "alert.import.upload.success": "File uploaded successfully",
+  "alert.import.upload.failed": "File upload failed",
+  "alert.import.upload.invalid_json": "Invalid JSON file",
   // /alerting/rule/edit page 编辑规则页面
   "alert.rule.form.title.edit": "Edit Rules",
   "alert.rule.form.label.select_cluster": "Select cluster",
   "alert.rule.form.label.select_object": "Select objects",
   "alert.rule.form.label.filter_condition": "Filter query",
   "alert.rule.form.label.time_field": "Time field",
+  "alert.rule.form.label.ignore_time_filter": "Ignore time filter",
+  "alert.rule.form.help.ignore_time_filter":
+    "Enable for non-time-series rules to query without a time range.",
   //Configure alert objects 配置告警对象
   "alert.rule.form.title.configure_alert_object": "Configure alert objects",
   "alert.rule.form.label.alert_metric": "Metrics",
@@ -257,6 +266,10 @@ export default {
   "alert.rule.form.title.configure_alert_channel_recovery":
     "Notification recovery channels",
   "alert.rule.form.label.alert_channel": "Notification channels",
+  "alert.rule.form.label.incremental_recovery_notification":
+    "Incremental recovery notifications",
+  "alert.rule.form.help.incremental_recovery_notification":
+    "When enabled, grouped alerts send recovery notifications as each group recovers.",
   "alert.rule.form.label.accept_upgrade": "Notification escalation",
   "alert.rule.form.label.upgrade_notification_waiting_time":
     "Escalation waiting time",
@@ -272,6 +285,7 @@ export default {
     "Template variables examples:",
   "alert.rule.form.title.example1": "Example1:",
   "alert.rule.form.title.example2": "Example2(array traversal):",
+  "alert.rule.form.title.example": "Example",
   "alert.rule.form.title.template_function": "Template functions",
   // alerting/rule/new page 新建规则页面
   "alert.rule.form.title.create": "Create Rules",
@@ -306,6 +320,16 @@ export default {
   "alert.message.priority.info": "P4(Info)",
   "alert.message.priority.ignored": "Ignored",
   "alert.message.priority.": "Undefined",
+  "alert.message.priority.undefined": "Undefined",
+  "alert.message.status.alerting": "Alerting",
+  "alert.message.status.ignored": "Ignored",
+  "alert.message.status.recovered": "Recovered",
+  "alert.message.status.ok": "OK",
+  "alert.message.status.error": "Error",
+  "alert.message.status.nodata": "No data",
+  "alert.message.ignored.time": "Ignored time",
+  "alert.message.ignored.operator": "Operator",
+  "alert.message.ignored.reason": "Reason",
 
   "alert.message.table.created": "Created time",
   "alert.message.table.priority": "Priority",
@@ -330,11 +354,14 @@ export default {
   "alert.message.detail.ignored_time": "Ignored time",
   "alert.message.detail.message": "Event message",
   "alert.message.detail.alert_metric_status": "Metrics",
+  "alert.message.detail.no_history_data": "No alert history data available",
   "alert.message.detail.execution_record": "History",
   "alert.message.detail.action_message": "Alert message",
   "alert.message.detail.action_result": "Execution result",
   "alert.message.detail.action_result_error": "Exection error",
   "alert.message.detail.alert_info": "Alert Detail",
+  "alert.message.detail.query_dsl": "Query DSL",
+  "alert.message.detail.response": "Response",
   "alert.message.detail.condition.type": "Condition Type",
   "alert.message.detail.condition": "Condition",
   "alert.message.detail.bucket_diff_type": "Bucket Diff Type",
@@ -356,7 +383,14 @@ export default {
   "alert.channel.form.advanced.custom": "(Custom)",
   "alert.channel.form.advanced.load.default": "Load Channel's Default Config",
 
+  "alert.channel.form.webhook.url": "Webhook URL",
+  "alert.channel.form.webhook.url.required": "Please input webhook URL!",
+  "alert.channel.form.webhook.method": "HTTP Method",
+  "alert.channel.form.webhook.method.required": "Please select HTTP method!",
+  "alert.channel.form.webhook.headers": "Headers",
   "alert.channel.form.webhook.template.title": "Default Body Template",
+  "alert.channel.form.webhook.body": "Body",
+  "alert.channel.form.webhook.body.required": "Please input body!",
   "alert.channel.form.webhook.send.test": "Send Test Message",
 
   "alert.channel.form.email.server": "SMTP Server",
@@ -375,10 +409,22 @@ export default {
   "alert.channel.form.email.template.body": "Body",
   "alert.channel.form.email.template.body.required": "Please input body!",
   "alert.channel.form.email.send.test": "Send A Test Email",
+  "alert.rule.form.template.sync": "Sync template",
+  "alert.rule.form.template.sync.success": "The current rule template has been synced success",
+  "alert.rule.form.template.sync.failed": "Failed to sync rule template",
+  "alert.channel.enable.tip.email_incomplete":
+    "Configure an SMTP server and at least one recipient before enabling this email channel.",
+  "alert.channel.enable.tip.email_server":
+    "Configure an SMTP server before enabling this email channel.",
+  "alert.channel.enable.tip.email_recipients":
+    "Configure at least one recipient before enabling this email channel.",
 
   "alert.channel.empty": "No channels?",
   "alert.channel.export-import.label": " Channels",
   "alert.rule.export-import.label": " Rules",
+  "alert.import.example.title": "Import example",
+  "alert.import.example.tip.rule":
+    "Export one rule file first as a template, then edit and import with the same structure.",
 
   // 告警任务详情页面
   "alert.task.detail.title": "Alert Task Detail",

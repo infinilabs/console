@@ -73,7 +73,7 @@ export default ({ clusterID, clusterName, timeRange, action }) => {
 
   const columns = [
     {
-      title: "Name",
+      title: formatMessage({ id: "overview.column.name" }),
       dataIndex: "name",
       render: (text, record) => (
         <IconText
@@ -100,7 +100,7 @@ export default ({ clusterID, clusterName, timeRange, action }) => {
       sorter: (a, b) => sorter.string(a, b, "name"),
     },
     {
-      title: "Status",
+      title: formatMessage({ id: "overview.column.status" }),
       dataIndex: "status",
       render: (text, record) => <HealthStatusView status={text} />,
       sorter: (a, b) => sorter.string(a, b, "status"),
@@ -119,14 +119,14 @@ export default ({ clusterID, clusterName, timeRange, action }) => {
       >
         <div style={{ maxWidth: 300, flex: "1 1 auto" }}>
           <Search
-            placeholder="Type keyword to search"
+            placeholder={formatMessage({ id: "listview.search.placeholder" })}
             onSearch={(value) => {
               setSearchValue(value);
             }}
             onChange={(e) => {
               setSearchValue(e.currentTarget.value);
             }}
-            enterButton
+            enterButton={formatMessage({ id: "form.button.search" })}
           />
         </div>
         <div>

@@ -12,13 +12,13 @@ export default (props) => {
   }
 
   const overviews = [
-    { 
-      key: 'nodes', 
-      title: 'Nodes', 
+    {
+      key: "nodes",
+      titleId: "overview.title.node",
       action: `${ESPrefix}/${clusterID}/index/${indexName}/nodes`,
-      component: MetricNodes 
-    }
-  ]
+      component: MetricNodes,
+    },
+  ];
 
   return (
     <Metrics
@@ -33,5 +33,5 @@ export default (props) => {
         "search_latency",
       ]}
     />
-  )
+  );
 };

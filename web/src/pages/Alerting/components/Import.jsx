@@ -6,6 +6,7 @@ import {
   Icon,
   Menu,
   Select,
+  Tooltip,
   Upload,
   message,
 } from "antd";
@@ -31,6 +32,7 @@ export default Form.create()((props) => {
     visible = false,
     title,
     types = [],
+    exampleType,
     form,
     onSuccess,
     onClose,
@@ -53,11 +55,11 @@ export default Form.create()((props) => {
       body: uploadState.data,
     });
     if (res?.acknowledged) {
-      message.success("Imported succeed!");
+      message.success(formatMessage({ id: "alert.import.submit.success" }));
       if (onClose) onClose();
       if (onSuccess) onSuccess();
     } else {
-      message.error("Imported failed!");
+      message.error(formatMessage({ id: "alert.import.submit.failed" }));
     }
     setLoading(false);
   };
@@ -71,24 +73,73 @@ export default Form.create()((props) => {
     });
   };
 
+  const clearUploadState = () => {
+    setUploadState((prev) => ({
+      ...(prev || {}),
+      fileList: [],
+      data: undefined,
+    }));
+    form.setFieldsValue({
+      upload: [],
+    });
+  };
+
   const normFile = (e) => {
     if (Array.isArray(e)) {
       return e;
     }
-    setUploadState({
-      ...(uploadState || {}),
-      fileList: [e.file],
-    });
-    return e && e.fileList;
+    const fileList = e?.fileList ? e.fileList.slice(-1) : [];
+    setUploadState((prev) => ({
+      ...(prev || {}),
+      fileList,
+      ...(fileList.length === 0 ? { data: undefined } : {}),
+    }));
+    return fileList;
   };
 
   const renderImportBody = () => {
+    const alertRuleExample = `{
+  "metadatas": [
+    {
+      "type": "AlertRule",
+      "items": [
+        {
+          "id": "rule_cpu_high",
+          "name": "CPU High Alert",
+          "enabled": true,
+          "resource_id": "your_cluster_id",
+          "priority": "critical"
+        }
+      ]
+    },
+    {
+      "type": "AlertChannel",
+      "items": [
+        {
+          "id": "channel_email_default",
+          "name": "Default Email Channel"
+        }
+      ]
+    }
+  ]
+}`;
+    const showRuleExample = false;
+    //const showRuleExample = exampleType === "AlertRule";
     const uploadProps = {
       accept: "application/json",
       fileList: uploadState?.fileList || [],
       multiple: false,
       name: "file",
+      onRemove() {
+        clearUploadState();
+        return true;
+      },
       onChange(info) {
+        const fileList = info?.fileList ? info.fileList.slice(-1) : [];
+        if (info.file.status === "removed" || fileList.length === 0) {
+          clearUploadState();
+          return;
+        }
         if (info.file.status !== "uploading") {
           //cat json content
           let reader = new FileReader();
@@ -96,20 +147,21 @@ export default Form.create()((props) => {
             const jsonStr = e.target.result;
             try {
               const jsonObj = JSON.parse(jsonStr);
-              setUploadState({
-                ...(uploadState || {}),
+              setUploadState((prev) => ({
+                ...(prev || {}),
+                fileList,
                 data: jsonObj,
-              });
+              }));
             } catch {
-              message.error(`${info.file.name} is an invalid json file!`);
+              message.error(formatMessage({ id: "alert.import.upload.invalid_json" }));
             }
           };
           reader.readAsText(info.file.originFileObj);
         }
         if (info.file.status === "done") {
-          message.success(`${info.file.name} file uploaded successfully`);
+          message.success(formatMessage({ id: "alert.import.upload.success" }));
         } else if (info.file.status === "error") {
-          message.error(`${info.file.name} file upload failed.`);
+          message.error(formatMessage({ id: "alert.import.upload.failed" }));
         }
       },
     };
@@ -123,14 +175,42 @@ export default Form.create()((props) => {
     } catch {}
 
     return (
-      <>
+      <div>
+        {showRuleExample ? (
+          <>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <span>{formatMessage({ id: "alert.import.example.title" })}</span>
+              <Tooltip title={formatMessage({ id: "alert.import.example.tip.rule" })}>
+                <Icon type="info-circle" style={{ color: "rgba(0,0,0,0.45)" }} />
+              </Tooltip>
+            </div>
+            <Editor
+              height="260px"
+              language="json"
+              theme="light"
+              value={alertRuleExample}
+              options={{
+                minimap: {
+                  enabled: false,
+                },
+                readOnly: true,
+                scrollBeyondLastLine: false,
+                scrollbar: {
+                  vertical: "hidden",
+                  horizontal: "hidden",
+                },
+              }}
+            />
+            <div style={{ height: 12 }} />
+          </>
+        ) : null}
         <Form.Item label={formatMessage({ id: "app.export.form.file" })}>
           {getFieldDecorator("upload", {
             getValueFromEvent: normFile,
             rules: [
               {
                 required: true,
-                message: "Please select file",
+                message: formatMessage({ id: "alert.import.select_file" }),
               },
             ],
           })(
@@ -144,7 +224,7 @@ export default Form.create()((props) => {
         </Form.Item>
         {data && (
           <Editor
-            height="calc(100vh - 110px - 70px - 48px)"
+            height={showRuleExample ? "50vh" : "55vh"}
             language="json"
             theme="light"
             value={data}
@@ -165,7 +245,7 @@ export default Form.create()((props) => {
             }}
           />
         )}
-      </>
+      </div>
     );
   };
 

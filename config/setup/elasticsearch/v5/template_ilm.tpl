@@ -21,7 +21,8 @@ PUT _template/$[[SETUP_TEMPLATE_NAME]]
           }
         }
       },
-      "number_of_shards": "1"
+      "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+      "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]"
     }
   },
   "mappings": {
@@ -59,7 +60,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]metrics-rollover
     "index" : {
       "format" : "7",
       "codec" : "best_compression",
-      "number_of_shards" : "1",
+      "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+      "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
       "translog.durability":"async"
     }
   },
@@ -121,7 +123,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]logs-rollover
     "index": {
       "format": "7",
       "codec": "best_compression",
-      "number_of_shards": "1",
+      "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+      "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
       "translog": {
         "durability": "async"
       }
@@ -174,7 +177,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]requests_logging-rollover
     "index": {
       "format": "7",
       "codec": "best_compression",
-      "number_of_shards": "1",
+      "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+      "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
       "translog": {
         "durability": "async"
       }
@@ -238,7 +242,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]async_bulk_results-rollover
     "index": {
       "format": "7",
       "codec": "best_compression",
-      "number_of_shards": "1",
+      "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+      "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
       "translog": {
         "durability": "async"
       }
@@ -302,7 +307,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]alert-history-rollover
       "index" : {
         "format" : "7",
         "codec" : "best_compression",
-        "number_of_shards" : "1",
+        "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+        "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
         "translog.durability":"async",
         "analysis": {
           "analyzer": {
@@ -457,7 +463,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]activities-rollover
       "index" : {
         "format" : "7",
         "codec" : "best_compression",
-        "number_of_shards" : "1",
+        "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+        "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
         "translog.durability":"async",
         "analysis": {
           "analyzer": {
@@ -556,7 +563,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]audit-logs-rollover
       "index" : {
         "format" : "7",
         "codec" : "best_compression",
-        "number_of_shards" : "1",
+        "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+        "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
         "translog.durability":"async",
         "analysis": {
           "analyzer": {

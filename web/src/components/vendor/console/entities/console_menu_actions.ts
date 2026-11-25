@@ -33,8 +33,8 @@
 import { SenseEditor } from './sense_editor';
 import { getEndpointFromPosition} from '../modules/autocomplete/get_endpoint_from_position';
 
-export async function autoIndent(editor: SenseEditor, event: React.MouseEvent) {
-  event.preventDefault();
+export async function autoIndent(editor: SenseEditor, event?: { preventDefault?: () => void }) {
+  event?.preventDefault?.();
   await editor.autoIndent();
   editor.getCoreEditor().getContainer().focus();
 }

@@ -13,3 +13,21 @@ export function isSystemCluster(clusterID){
 export function getSystemClusterID() {
   return 'infini_default_system_cluster';
 }
+
+export function getPreferredCluster(clusters = [], options = {}) {
+  if (!Array.isArray(clusters) || clusters.length === 0) {
+    return null;
+  }
+
+  const { selectedClusterID, targetClusterID } = options;
+  const findCluster = (clusterID) =>
+    clusterID ? clusters.find((item) => item.id === clusterID) : null;
+
+  return (
+    findCluster(selectedClusterID) ||
+    findCluster(targetClusterID) ||
+    findCluster(getSystemClusterID()) ||
+    clusters[0] ||
+    null
+  );
+}

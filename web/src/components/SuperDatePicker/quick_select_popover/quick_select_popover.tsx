@@ -117,7 +117,7 @@ export class EuiQuickSelectPopover extends Component<
     const showTimeSelect = !!timeField
 
     return (
-      <Fragment>
+      <Fragment key="quickSelect">
         {
           showTimeSelect && (
             <>

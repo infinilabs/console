@@ -94,7 +94,7 @@ export class DurationFormatEditor extends DefaultFormatEditor<
     const { error, samples, hasDecimalError } = this.state;
 
     return (
-      <Fragment>
+      <Fragment key="durationFormatEditor">
         <EuiFormRow
           label={
             "Input format"

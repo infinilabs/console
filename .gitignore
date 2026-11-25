@@ -37,3 +37,5 @@ config/generated.go
 config/generat*.go
 config/initialization.dsl
 config/system_config.yml
+plugin/enterprise
+/plugin/enterprise/

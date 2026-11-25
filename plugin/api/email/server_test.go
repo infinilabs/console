@@ -2,6 +2,8 @@ package email
 
 import (
 	"crypto/tls"
+	"errors"
+	"strings"
 	"testing"
 
 	consolemodel "infini.sh/console/model"
@@ -106,5 +108,74 @@ func TestNewEmailTestDialerRejectsUnsupportedTLSVersion(t *testing.T) {
 	_, err := newEmailTestDialer(server)
 	if err == nil {
 		t.Fatal("expected unsupported TLS version to fail")
+	}
+}
+
+func TestNewEmailTLSConfigSetsServerName(t *testing.T) {
+	cfg := newEmailTLSConfig("smtp.example.com", tls.VersionTLS13)
+
+	if cfg.ServerName != "smtp.example.com" {
+		t.Fatalf("expected server name to be preserved, got %q", cfg.ServerName)
+	}
+	if cfg.MinVersion != tls.VersionTLS13 {
+		t.Fatalf("expected min TLS version %d, got %d", tls.VersionTLS13, cfg.MinVersion)
+	}
+	if !cfg.InsecureSkipVerify {
+		t.Fatal("expected insecure skip verify to remain enabled")
+	}
+}
+
+func TestClassifyEmailServerTestSendErrorSenderMismatch(t *testing.T) {
+	server := &consolemodel.EmailServer{
+		Sender: "hello@example.com",
+		Auth: &frameworkmodel.BasicAuth{
+			Username: "notify@example.com",
+			Password: ucfg.SecretString("secret"),
+		},
+	}
+
+	key, reason := classifyEmailServerTestSendError(server, server.Sender, errors.New("gomail: could not send email 1: 550 5.7.1 authentication is required"))
+	if key != emailServerTestErrorKeySenderMismatch {
+		t.Fatalf("expected sender mismatch key, got %q", key)
+	}
+	if reason == "" {
+		t.Fatal("expected a human-readable reason")
+	}
+}
+
+func TestClassifyEmailServerTestSendErrorSMTPAuthFailure(t *testing.T) {
+	server := &consolemodel.EmailServer{
+		Auth: &frameworkmodel.BasicAuth{
+			Username: "notify@example.com",
+			Password: ucfg.SecretString("secret"),
+		},
+	}
+
+	key, reason := classifyEmailServerTestSendError(server, "notify@example.com", errors.New("535 Authentication failed"))
+	if key != emailServerTestErrorKeySMTPAuthFailed {
+		t.Fatalf("expected SMTP auth failure key, got %q", key)
+	}
+	if reason == "" {
+		t.Fatal("expected a human-readable reason")
+	}
+}
+
+func TestClassifyEmailServerTestSendErrorMapsUnknownErrorsToGenericMessage(t *testing.T) {
+	key, reason := classifyEmailServerTestSendError(nil, "", errors.New("dial tcp: connection refused"))
+	if key != emailServerTestErrorKeySendFailed {
+		t.Fatalf("expected generic send failure key, got %q", key)
+	}
+	if reason == "" || reason == "dial tcp: connection refused" {
+		t.Fatalf("expected generic human-readable reason, got %q", reason)
+	}
+}
+
+func TestClassifyEmailServerTestSendErrorMapsSendRejectionToGenericMessage(t *testing.T) {
+	key, reason := classifyEmailServerTestSendError(nil, "", errors.New("gomail: could not send email 1: 554 5.5.3 RP:TRC"))
+	if key != emailServerTestErrorKeySendFailed {
+		t.Fatalf("expected generic send failure key, got %q", key)
+	}
+	if reason == "" || strings.Contains(strings.ToLower(reason), "gomail: could not send email") {
+		t.Fatalf("expected sanitized human-readable reason, got %q", reason)
 	}
 }

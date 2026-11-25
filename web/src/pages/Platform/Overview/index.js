@@ -20,7 +20,7 @@ const { TabPane } = Tabs;
 
 const panes = [
   {
-    title: "Clusters",
+    titleId: "overview.title.cluster",
     component: Cluster,
     key: "clusters",
     count: 0,
@@ -29,7 +29,7 @@ const panes = [
     },
   },
   {
-    title: "Nodes",
+    titleId: "overview.title.node",
     component: Node,
     key: "nodes",
     count: 0,
@@ -38,7 +38,7 @@ const panes = [
     },
   },
   {
-    title: "Indices",
+    titleId: "overview.title.index",
     component: Indices,
     key: "indices",
     count: 0,
@@ -47,7 +47,7 @@ const panes = [
     },
   },
   // {
-  //   title: "Hosts",
+  //   titleId: "overview.title.host",
   //   component: Host,
   //   key: "hosts",
   //   count: 0,
@@ -83,10 +83,9 @@ const NewOverview = (props) => {
       <div>
         <Tabs
           onChange={(key) => {
-            setParam((param) => {
-              return {
-                tab: key,
-              };
+            setParam({
+              ...(param || {}),
+              tab: key,
             });
           }}
           destroyInactiveTabPane
@@ -99,7 +98,7 @@ const NewOverview = (props) => {
               tab={
                 <>
                   <pane.icon />
-                  {`${pane.title}(${pane.count})`}
+                  {`${formatMessage({ id: pane.titleId })}(${pane.count})`}
                 </>
               }
               key={pane.key}

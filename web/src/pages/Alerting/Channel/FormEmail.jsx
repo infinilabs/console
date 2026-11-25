@@ -54,7 +54,7 @@ export default (props) => {
             </Form.Item>
 
             <Form.Item label="  " colon={false}>
-              <Link to="/system/email_server">{formatMessage({id: "alert.channel.form.email.server.new"})} &gt;</Link>
+              <Link to="/system/settings?tab=email">{formatMessage({id: "alert.channel.form.email.server.new"})} &gt;</Link>
             </Form.Item>
 
             <Form.Item label={<span style={{

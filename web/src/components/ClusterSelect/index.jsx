@@ -177,6 +177,9 @@ export default connect(({ global, loading }) => ({
         });
         dispatch({
           type: "global/fetchClusterStatus",
+          payload: {
+            force: true,
+          },
         })
       }}
       loading={clusterLoading}

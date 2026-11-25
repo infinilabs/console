@@ -1,6 +1,7 @@
 import React from "react";
 import { ESPrefix } from "@/services/common";
 import Infos from "@/components/Overview/Detail/Infos";
+import { formatMessage } from "umi/locale";
 
 export default (props) => {
   const indexID = props.data?._source?.metadata?.index_id;
@@ -32,7 +33,7 @@ export default (props) => {
 
   return (
     <Infos
-      header="Index Info"
+      header={formatMessage({ id: "overview.info.index" })}
       action={`${ESPrefix}/${clusterID}/index/${indexID}/info`}
       formatInfo={formatInfo}
     />

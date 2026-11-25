@@ -29,6 +29,7 @@ package insight
 
 import (
 	"infini.sh/console/core"
+	"infini.sh/console/core/security/enum"
 	"infini.sh/framework/core/api"
 )
 
@@ -42,18 +43,18 @@ func InitAPI() {
 	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/visualization/data", insight.RequireLogin(insight.HandleGetMetricData))
 	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/visualization/preview", insight.RequireLogin(insight.HandleGetPreview))
 
-	api.HandleAPIMethod(api.GET, "/insight/visualization/:visualization_id", insight.getVisualization)
-	api.HandleAPIMethod(api.POST, "/insight/visualization", insight.createVisualization)
-	api.HandleAPIMethod(api.PUT, "/insight/visualization/:visualization_id", insight.updateVisualization)
-	api.HandleAPIMethod(api.DELETE, "/insight/visualization/:visualization_id", insight.deleteVisualization)
-	api.HandleAPIMethod(api.GET, "/insight/visualization/_search", insight.searchVisualization)
+	api.HandleAPIMethod(api.GET, "/insight/visualization/:visualization_id", insight.RequirePermission(insight.getVisualization, enum.PermissionLayoutRead))
+	api.HandleAPIMethod(api.POST, "/insight/visualization", insight.RequirePermission(insight.createVisualization, enum.PermissionLayoutWrite))
+	api.HandleAPIMethod(api.PUT, "/insight/visualization/:visualization_id", insight.RequirePermission(insight.updateVisualization, enum.PermissionLayoutWrite))
+	api.HandleAPIMethod(api.DELETE, "/insight/visualization/:visualization_id", insight.RequirePermission(insight.deleteVisualization, enum.PermissionLayoutWrite))
+	api.HandleAPIMethod(api.GET, "/insight/visualization/_search", insight.RequirePermission(insight.searchVisualization, enum.PermissionLayoutRead))
 
-	api.HandleAPIMethod(api.GET, "/insight/dashboard/:dashboard_id", insight.getDashboard)
-	api.HandleAPIMethod(api.POST, "/insight/dashboard", insight.createDashboard)
-	api.HandleAPIMethod(api.PUT, "/insight/dashboard/:dashboard_id", insight.updateDashboard)
-	api.HandleAPIMethod(api.DELETE, "/insight/dashboard/:dashboard_id", insight.deleteDashboard)
-	api.HandleAPIMethod(api.GET, "/insight/dashboard/_search", insight.searchDashboard)
-	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/map_label/_render", insight.renderMapLabelTemplate)
-	api.HandleAPIMethod(api.GET, "/insight/widget/:widget_id", insight.getWidget)
-	api.HandleAPIMethod(api.POST, "/insight/widget", insight.RequireLogin(insight.createWidget))
+	api.HandleAPIMethod(api.GET, "/insight/dashboard/:dashboard_id", insight.RequirePermission(insight.getDashboard, enum.DashboardReadPermission...))
+	api.HandleAPIMethod(api.POST, "/insight/dashboard", insight.RequirePermission(insight.createDashboard, enum.DashboardAllPermission...))
+	api.HandleAPIMethod(api.PUT, "/insight/dashboard/:dashboard_id", insight.RequirePermission(insight.updateDashboard, enum.DashboardAllPermission...))
+	api.HandleAPIMethod(api.DELETE, "/insight/dashboard/:dashboard_id", insight.RequirePermission(insight.deleteDashboard, enum.DashboardAllPermission...))
+	api.HandleAPIMethod(api.GET, "/insight/dashboard/_search", insight.RequirePermission(insight.searchDashboard, enum.DashboardReadPermission...))
+	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/map_label/_render", insight.RequireClusterPermission(insight.renderMapLabelTemplate, enum.PermissionElasticsearchClusterRead))
+	api.HandleAPIMethod(api.GET, "/insight/widget/:widget_id", insight.RequirePermission(insight.getWidget, enum.PermissionLayoutRead))
+	api.HandleAPIMethod(api.POST, "/insight/widget", insight.RequirePermission(insight.createWidget, enum.PermissionLayoutWrite))
 }

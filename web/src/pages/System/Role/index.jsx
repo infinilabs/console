@@ -11,6 +11,7 @@ import {
   message,
   Menu,
   Dropdown,
+  Icon,
 } from "antd";
 import { formatMessage } from "umi/locale";
 import useFetch from "@/lib/hooks/use_fetch";
@@ -27,7 +28,19 @@ import moment from "moment";
 import { formatter } from "@/lib/format";
 import { hasAuthority } from "@/utils/authority";
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
+
+const firstColumnIconStyle = {
+  marginRight: 8,
+  color: "#999",
+  fontSize: 12,
+};
+
+const displayOrDash = (value) => {
+  if (value === null || value === undefined) return "-";
+  const text = `${value}`.trim();
+  return text ? text : "-";
+};
 
 const RoleList = (props) => {
   const [queryParams, setQueryParams] = React.useState({});
@@ -44,7 +57,7 @@ const RoleList = (props) => {
     async (roleID) => {
       const deleteRes = await request(`/role/${roleID}`, {
         method: "DELETE",
-      });
+      }, false, false);
       if (deleteRes && deleteRes.result == "deleted") {
         message.success(
           formatMessage({
@@ -54,6 +67,17 @@ const RoleList = (props) => {
         setTimeout(() => {
           onRefreshClick();
         }, 1000);
+      } else if (deleteRes && deleteRes.error) {
+        const reason = deleteRes.error.reason || "";
+        if (reason === "role is still assigned to users") {
+          message.error(
+            formatMessage({
+              id: "system.security.role.delete.error.assigned_to_users",
+            })
+          );
+        } else {
+          message.error(reason || formatMessage({ id: "app.message.error" }));
+        }
       }
     },
     [setQueryParams]
@@ -61,51 +85,62 @@ const RoleList = (props) => {
   const columns = useMemo(
     () => [
       {
-        title: "Name",
+        title: formatMessage({ id: "system.security.role.table.name" }),
         dataIndex: "name",
+        render: (text) => (
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <Icon type="safety" style={firstColumnIconStyle} />
+            <span>{displayOrDash(text)}</span>
+          </div>
+        ),
       },
       {
-        title: "Type",
+        title: formatMessage({ id: "system.security.role.table.type" }),
         dataIndex: "type",
+        render: (val) => displayOrDash(val),
       },
       {
-        title: "Builtin",
+        title: formatMessage({ id: "system.security.role.table.builtin" }),
         dataIndex: "builtin",
         render: (val) => {
           return val === true ? "true" : "false";
         },
       },
       {
-        title: "Description",
+        title: formatMessage({ id: "system.security.role.table.description" }),
         dataIndex: "description",
+        render: (val) => displayOrDash(val),
       },
       {
         title: formatMessage({ id: "table.field.actions" }),
-        render: (text, record) => (
-          <div>
-            {hasAuthority("system.security:all") && record.builtin === false ? (
-              <>
-                <Link
-                  key="edit"
-                  to={
-                    record.type == "platform"
-                      ? `/system/security/role/platform/edit/${record.id}`
-                      : `/system/security/role/data/edit/${record.id}`
-                  }
-                >
-                  Edit
-                </Link>
-                <Divider key="d2" type="vertical" />
-                <Popconfirm
-                  title="Sure to delete?"
-                  onConfirm={() => onDeleteClick(record.id)}
-                >
-                  <a>Delete</a>
-                </Popconfirm>
-              </>
-            ) : null}
-          </div>
-        ),
+        render: (text, record) => {
+          if (!(hasAuthority("system.security:all") && record.builtin === false)) {
+            return "-";
+          }
+          return (
+            <div>
+              <Link
+                key="edit"
+                to={
+                  record.type == "platform"
+                    ? `/system/security/role/platform/edit/${record.id}`
+                    : `/system/security/role/data/edit/${record.id}`
+                }
+              >
+                {formatMessage({ id: "form.button.edit" })}
+              </Link>
+              <Divider key="d2" type="vertical" />
+              <Popconfirm
+                title={formatMessage({
+                  id: "system.security.confirm.delete",
+                })}
+                onConfirm={() => onDeleteClick(record.id)}
+              >
+                <a>{formatMessage({ id: "form.button.delete" })}</a>
+              </Popconfirm>
+            </div>
+          );
+        },
       },
     ],
 
@@ -160,8 +195,12 @@ const RoleList = (props) => {
   };
   const menu = (
     <Menu onClick={handleMenuClick}>
-      <Menu.Item key="console">Add Platform Role</Menu.Item>
-      <Menu.Item key="data">Add Data Role</Menu.Item>
+      <Menu.Item key="console">
+        {formatMessage({ id: "system.security.role.menu.add_platform" })}
+      </Menu.Item>
+      <Menu.Item key="data">
+        {formatMessage({ id: "system.security.role.menu.add_data" })}
+      </Menu.Item>
     </Menu>
   );
 
@@ -176,10 +215,12 @@ const RoleList = (props) => {
         }}
       >
         <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-          <Search
+          <SearchInput
             allowClear
-            placeholder="Type keyword to search"
-            enterButton="Search"
+            placeholder={formatMessage({
+              id: "system.security.search.placeholder",
+            })}
+            enterButton={formatMessage({ id: "form.button.search" })}
             onSearch={(value) => {
               onSearchClick(value);
             }}
@@ -229,7 +270,10 @@ const RoleList = (props) => {
           total: total?.value || total,
           showSizeChanger: true,
           showTotal: (total, range) =>
-            `${range[0]}-${range[1]} of ${total} items`,
+            formatMessage(
+              { id: "system.security.pagination.total" },
+              { start: range[0], end: range[1], total }
+            ),
         }}
         columns={columns}
         onChange={handleTableChange}

@@ -23,13 +23,11 @@ export default ({
   clusterID,
   clusterName,
   timeRange,
+  refresh,
+  timeout,
   clusterAvailable,
   bucketSize,
 }) => {
-  const initialQueryParams = {
-    from: 0,
-    size: 20,
-  };
   const filterFields = {
     name: "Name",
     ip: "IP",
@@ -41,19 +39,6 @@ export default ({
     setShowRealtime(clusterAvailable);
   }, [clusterID, clusterAvailable]);
 
-  function reducer(queryParams, action) {
-    switch (action.type) {
-      case "pageSizeChange":
-        return {
-          ...queryParams,
-          size: action.value,
-        };
-      default:
-        throw new Error();
-    }
-  }
-  const [queryParams, dispatch] = React.useReducer(reducer, initialQueryParams);
-
   const {
     loading: nodesLoading,
     error: nodesError,
@@ -61,9 +46,12 @@ export default ({
   } = useFetch(
     `${ESPrefix}/${clusterID}/nodes${showRealtime ? "/realtime" : ""}`,
     {
-      queryParams: showRealtime ? {} : formatTimeRange(timeRange),
+      queryParams: {
+        ...(showRealtime ? {} : formatTimeRange(timeRange)),
+        timeout,
+      },
     },
-    [clusterID, timeRange, showRealtime]
+    [clusterID, timeRange, showRealtime, refresh, timeout]
   );
 
   const [hits, hitsTotal] = React.useMemo(() => {
@@ -93,8 +81,10 @@ export default ({
   const [columns] = React.useMemo(() => {
     let columns = [
       {
-        title: "Name",
+        title: formatMessage({ id: "overview.column.name" }),
         dataIndex: "name",
+        fixed: "left",
+        width: 200,
         render: (text, record) => (
           <span>
             <IconText
@@ -134,7 +124,7 @@ export default ({
     ];
     if (showRealtime) {
       columns.push({
-        title: "Status",
+        title: formatMessage({ id: "overview.column.status" }),
         dataIndex: "status",
         render: (text, record) => (
           <HealthStatusView status={text ?? "available"} />
@@ -145,14 +135,14 @@ export default ({
     }
     columns = columns.concat([
       {
-        title: "Shards",
+        title: formatMessage({ id: "overview.column.shards" }),
         dataIndex: "shards",
         render: (text, record) => <span>{text || "N/A"}</span>,
         sorter: (a, b) => a?.shards - b?.shards,
         className: "verticalAlign",
       },
       {
-        title: "CPU Usage",
+        title: formatMessage({ id: "overview.column.cpu_usage" }),
         dataIndex: "cpu",
         render: (text, record) => {
           const number = parseFloat(text);
@@ -168,7 +158,7 @@ export default ({
         className: "verticalAlign",
       },
       {
-        title: "Load Average",
+        title: formatMessage({ id: "overview.column.load_average" }),
         dataIndex: "load_1m",
         render: (text, record) => (
           <span>
@@ -179,7 +169,7 @@ export default ({
         className: "verticalAlign",
       },
       {
-        title: "JVM Heap",
+        title: formatMessage({ id: "overview.column.jvm_heap" }),
         dataIndex: "heap.percent",
         render: (text, record) => {
           const number = parseFloat(text);
@@ -195,14 +185,14 @@ export default ({
         className: "verticalAlign",
       },
       {
-        title: "Disk Free Space",
+        title: formatMessage({ id: "overview.column.disk_free_space" }),
         dataIndex: "disk_avail_bytes",
         render: (text, record) => <span>{record["disk.avail"] || "N/A"}</span>,
         sorter: (a, b) => a?.disk_avail_bytes - b?.disk_avail_bytes,
         className: "verticalAlign",
       },
       {
-        title: "Disk Used Space",
+        title: formatMessage({ id: "overview.column.disk_used_space" }),
         dataIndex: "disk_used_bytes",
         render: (text, record) => <span>{record["disk.used"] || "N/A"}</span>,
         sorter: (a, b) => a?.disk_used_bytes - b?.disk_used_bytes,
@@ -211,14 +201,14 @@ export default ({
     ]);
     if (showRealtime) {
       columns.push({
-        title: "Uptime",
+        title: formatMessage({ id: "overview.column.uptime" }),
         dataIndex: "uptime_ms",
         render: (text, record) => <span>{record["uptime"] || "N/A"}</span>,
         sorter: (a, b) => a?.uptime_ms - b?.uptime_ms,
         className: "verticalAlign",
       });
       columns.push({
-        title: "Indexing Rate",
+        title: formatMessage({ id: "overview.column.indexing_rate" }),
         dataIndex: "index_qps",
         render: (text, record) => (
           <span>{text != null ? `${text} /s` : "N/A"}</span>
@@ -227,7 +217,7 @@ export default ({
         className: "verticalAlign",
       });
       columns.push({
-        title: "Indexing Bytes",
+        title: formatMessage({ id: "overview.column.indexing_bytes" }),
         dataIndex: "index_bytes_qps",
         render: (text, record) => (
           <span>
@@ -238,7 +228,7 @@ export default ({
         className: "verticalAlign",
       });
       columns.push({
-        title: "Search Rate",
+        title: formatMessage({ id: "overview.column.search_rate" }),
         dataIndex: "query_qps",
         render: (text, record) => (
           <span>{text != null ? `${text} /s` : "N/A"}</span>
@@ -248,7 +238,7 @@ export default ({
       });
     } else {
       columns.push({
-        title: "Timestamp",
+        title: formatMessage({ id: "overview.column.timestamp" }),
         dataIndex: "timestamp",
         render: (text, record) => <span>{formatUtcTimeToLocal(text)}</span>,
         sorter: (a, b) => sorter.string(a, b, "timestamp"),
@@ -273,6 +263,8 @@ export default ({
           <FilterSearchGroup
             filterWidth={120}
             filterFields={filterFields}
+            filterValue={searchFilterFields[0] || undefined}
+            searchValue={searchValue}
             onFilterChange={(value) => {
               let val = value ? [value] : [];
               setSearchFilterFields(val);
@@ -319,12 +311,9 @@ export default ({
         columns={columns}
         pagination={{
           size: "small",
-          pageSize: queryParams.size,
+          pageSize: 20,
           total: hitsTotal,
-          showSizeChanger: true,
-          onShowSizeChange: (_, size) => {
-            dispatch({ type: "pageSizeChange", value: size });
-          },
+          showSizeChanger: false,
         }}
         scroll={{x: 'max-content' }}
       />

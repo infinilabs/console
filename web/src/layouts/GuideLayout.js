@@ -8,7 +8,7 @@ import SelectLang from "@/components/SelectLang";
 import request from "@/utils/request";
 import { router } from "umi";
 import { formatMessage } from "umi/locale";
-import { getHealth } from "@/services/system"
+import { refreshApplicationSettings } from "@/utils/authority";
 
 const { Header, Footer, Content } = Layout;
 
@@ -17,7 +17,7 @@ export default ({ children }) => {
 
   const fetchHealth = async () => {
     try {
-      const res = await getHealth();
+      const res = await refreshApplicationSettings();
       if (!res?.setup_required) {
         router.push("/");
       }

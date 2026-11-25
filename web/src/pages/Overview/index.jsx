@@ -8,7 +8,7 @@ import Disk from "./components/Disk";
 import Quick from "./components/Quick";
 import Product from "./components/Product";
 import Activities from "./components/Activities";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import request from "@/utils/request";
 import { GREEN, GREY, RED, YELLOW } from "./components/PieChart";
 import IconTitle from "./components/IconTitle";
@@ -16,6 +16,7 @@ import ClustersSvg from "@/components/Icons/Clusters";
 import NodesSvg from "@/components/Icons/Nodes";
 import HostsSvg from "@/components/Icons/Hosts";
 import DiskSvg from "@/components/Icons/DB";
+import useResizeObserver from "@react-hook/resize-observer";
 
 const STATUS = [
   {
@@ -39,6 +40,7 @@ const STATUS = [
       const { node } = data || {};
       return [
         { group: "available", value: node?.available || 0, color: GREEN },
+        { group: "unknown", value: node?.unknown || 0, color: GREY },
         { group: "unavailable", value: node?.unavailable || 0, color: GREY },
       ];
     },
@@ -56,7 +58,9 @@ const STATUS = [
   {
     title: "disk",
     icon: () => <Icon component={DiskSvg} />,
-    render: () => <Disk />,
+    render: (data, loading) => (
+      <Disk data={data?.total_used_store_in_bytes || 0} loading={loading} />
+    ),
   },
 ];
 
@@ -67,6 +71,8 @@ export default connect(({ user }) => ({
 
   const [status, setStatus] = useState({});
   const [loading, setLoading] = useState(false);
+  const leftNewsColumnRef = useRef(null);
+  const [newsColumnHeight, setNewsColumnHeight] = useState();
 
   const fetchStatus = async () => {
     setLoading(true);
@@ -80,6 +86,22 @@ export default connect(({ user }) => ({
   useEffect(() => {
     fetchStatus();
   }, []);
+
+  useEffect(() => {
+    if (
+      leftNewsColumnRef.current &&
+      typeof leftNewsColumnRef.current.getBoundingClientRect === "function"
+    ) {
+      setNewsColumnHeight(leftNewsColumnRef.current.getBoundingClientRect().height);
+    }
+  }, []);
+
+  useResizeObserver(leftNewsColumnRef, (entry) => {
+    const nextHeight = Math.ceil(entry.contentRect.height);
+    if (nextHeight > 0) {
+      setNewsColumnHeight(nextHeight);
+    }
+  });
 
   return (
     <div className={styles.overview}>
@@ -98,7 +120,7 @@ export default connect(({ user }) => ({
               <IconTitle title={item.title} icon={item.icon} />
               <div className={styles.content}>
                 {item.render ? (
-                  item.render()
+                  item.render(status, loading)
                 ) : (
                   <Status
                     data={item.formatData(status)}
@@ -114,13 +136,20 @@ export default connect(({ user }) => ({
       <Row
         gutter={8}
         className={styles.news}
-        style={{ height: "calc(100vh - 420px - 16px - 16px)", minHeight: 536 }}
       >
-        <Col sm={24} md={24} lg={12} style={{ marginBottom: 16 }}>
-          <Quick />
-          <Product />
+        <Col sm={24} md={24} lg={12} className={styles.stackColumn}>
+          <div className={styles.stackColumnInner} ref={leftNewsColumnRef}>
+            <Quick />
+            <Product />
+          </div>
         </Col>
-        <Col sm={24} md={24} lg={12}>
+        <Col
+          sm={24}
+          md={24}
+          lg={12}
+          className={styles.fillColumn}
+          style={newsColumnHeight ? { height: newsColumnHeight } : undefined}
+        >
           <Activities />
         </Col>
       </Row>

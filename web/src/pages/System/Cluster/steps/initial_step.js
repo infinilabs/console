@@ -1,10 +1,14 @@
-import { Form, Input, Switch, Icon, Select } from "antd";
+import { Form, Input, Switch, Icon, Select, Button } from "antd";
 import { formatMessage } from "umi/locale";
 import CredentialForm from "../CredentialForm";
 import "../Form.scss";
 import SearchEngines from "../components/SearchEngines";
 import Providers from "../components/Providers";
-import { isTLS, removeHttpSchema } from "@/utils/utils";
+import {
+  isTLS,
+  isValidEndpointHost,
+  normalizeEndpointHosts,
+} from "@/utils/utils";
 
 export const MANUAL_VALUE = "manual";
 
@@ -13,9 +17,10 @@ export class InitialStep extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      needAuth: props.initialValue?.isAuth !== undefined,
+      needAuth: props.initialValue?.isAuth === true,
       isManual: props.initialValue?.credential_id === MANUAL_VALUE,
-      isPageTLS: isTLS(props.initialValue?.host)
+      isPageTLS: isTLS(props.initialValue?.host),
+      showProbePath: !!props.initialValue?.probe_path,
     };
   }
   handleAuthChange = (val) => {
@@ -43,11 +48,22 @@ export class InitialStep extends React.Component {
   validateHostsRule = (rule, value, callback) => {
     let vals = value || [];
     for(let i = 0; i < vals.length; i++) {
-      if (!/^[\w\.\-_~%]+(\:\d+)?$/.test(vals[i])) {
+      if (!isValidEndpointHost(vals[i])) {
         return callback(formatMessage({ id: "cluster.regist.form.verify.valid.endpoint" }));
       }
     }
     // validation passed
+    callback();
+  };
+  validateProbePathRule = (rule, value, callback) => {
+    if (!value) {
+      callback();
+      return;
+    }
+    if (!String(value).trim().startsWith("/")) {
+      callback(formatMessage({ id: "cluster.regist.form.verify.valid.probe_path" }));
+      return;
+    }
     callback();
   };
   render() {
@@ -107,7 +123,7 @@ export class InitialStep extends React.Component {
           {getFieldDecorator("hosts", {
             initialValue: initialValue?.hosts || [],
             normalize: (value) => {
-              return (value || []).map((v) => removeHttpSchema(v || "").trim());
+              return normalizeEndpointHosts(value);
             },
             validateTrigger: ["onChange", "onBlur"],
             rules: [
@@ -123,7 +139,11 @@ export class InitialStep extends React.Component {
             ],
           })(<Select placeholder="127.0.0.1:9200" mode="tags" allowClear={true} onChange={this.handleEndpointChange}/>)}
         </Form.Item>
-        <Form.Item label="TLS">
+        <Form.Item
+          label={formatMessage({
+            id: "cluster.manage.field.tls.label",
+          })}
+        >
           {getFieldDecorator("isTLS", {
             initialValue: initialValue?.isTLS || false,
           })(
@@ -136,6 +156,47 @@ export class InitialStep extends React.Component {
             />
           )}
         </Form.Item>
+        <Form.Item label={formatMessage({ id: "app.action.advanced" })}>
+          <Button
+            type="link"
+            style={{ paddingLeft: 0 }}
+            onClick={() =>
+              this.setState((st) => ({ showProbePath: !st.showProbePath }))
+            }
+          >
+            {formatMessage({
+              id: this.state.showProbePath
+                ? "form.button.collapse"
+                : "cluster.regist.form.toggle.probe_path",
+            })}
+          </Button>
+        </Form.Item>
+        {this.state.showProbePath ? (
+          <Form.Item
+            label={formatMessage({
+              id: "cluster.regist.form.label.probe_path",
+            })}
+            extra={formatMessage({
+              id: "cluster.regist.form.help.probe_path",
+            })}
+          >
+            {getFieldDecorator("probe_path", {
+              initialValue: initialValue?.probe_path || "",
+              normalize: (value) => (value || "").trim(),
+              rules: [
+                {
+                  validator: this.validateProbePathRule,
+                },
+              ],
+            })(
+              <Input
+                placeholder={formatMessage({
+                  id: "cluster.regist.form.placeholder.probe_path",
+                })}
+              />
+            )}
+          </Form.Item>
+        ) : null}
         <Form.Item
           label={formatMessage({
             id: "cluster.regist.step.connect.label.auth",

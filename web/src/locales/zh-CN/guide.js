@@ -2,10 +2,39 @@ export default {
   "guide.header.title": "配置向导",
   "guide.initialization.step.configuration": "配置",
   "guide.initialization.step.configuration.desc":
-    "连接系统集群（Elasticsearch 要求 5.3 或更高版本）。",
+    "连接系统集群（Easysearch 要求 2.3 或更高版本）。",
   "guide.initialization.step.initialization": "初始化",
   "guide.initialization.step.initialization.desc":
     "初始化系统索引和模板的基本设置。",
+  "guide.initialization.start": "开始初始化",
+  "guide.initialization.defaults.message":
+    "已检测到 {dataNodes} 个可用数据节点（总节点数 {totalNodes}），主分片默认按节点数推荐为 {primaryShards}。",
+  "guide.initialization.primary_shards": "主分片数",
+  "guide.initialization.primary_shards.help":
+    "默认按可用数据节点数计算，通常保持与承载数据的节点数一致即可。",
+  "guide.initialization.primary_shards.invalid": "请输入大于 0 的主分片数。",
+  "guide.initialization.auto_expand_replicas": "自动副本",
+  "guide.initialization.auto_expand_replicas.help":
+    "默认使用 0-1，可填写 false、all 或形如 0-1 的范围值。",
+  "guide.initialization.auto_expand_replicas.invalid":
+    "自动副本格式无效，请输入 false、all 或形如 0-1 的范围值。",
+  "guide.initialization.rollup": "初始化 Rollup 模板",
+  "guide.initialization.rollup.help":
+    "仅 Easysearch 1.12.1 及以上版本支持。关闭后将跳过 Rollup 模板和作业初始化。",
+  "guide.initialization.task.template_ilm": "初始化模板和 ILM",
+  "guide.initialization.task.rollup": "初始化 Rollup 模板",
+  "guide.initialization.task.insight": "初始化仪表盘和可视化模板",
+  "guide.initialization.task.alerting": "初始化内置告警规则和通道",
+  "guide.initialization.task.agent": "初始化 Agent 安装模板",
+  "guide.initialization.task.view": "初始化数据视图模板",
+  "guide.initialization.task.start": "开始执行：{task}",
+  "guide.initialization.task.success": "执行成功：{task}",
+  "guide.initialization.task.failed": "执行失败：{task} {reason}",
+  "guide.initialization.task.status.pending": "待执行",
+  "guide.initialization.task.status.running": "执行中",
+  "guide.initialization.task.status.success": "已完成",
+  "guide.initialization.task.status.failed": "失败",
+  "guide.initialization.task.status.skipped": "已跳过",
   "guide.initialization.step.settings": "设置",
   "guide.initialization.step.settings.desc":
     "设置登录的默认用户以及凭据密钥。",
@@ -13,22 +42,28 @@ export default {
   "guide.initialization.step.finish.desc": `配置完成，开启 ${APP_DOMAIN} Console 之旅。`,
   "guide.cluster.host": "集群地址",
   "guide.cluster.host.required": "请输入集群地址！",
-  "guide.cluster.host.validate": "请输入IP地址和端口号！",
+  "guide.cluster.host.validate": "请输入域名或 IP 地址，可选端口号！",
   "guide.cluster.auth": "身份验证",
   "guide.cluster.test.connection": "连接测试",
   "guide.cluster.test.connection.error.version":
-    "Elasticsearch 要求 5.3 或更高版本。",
+    "Easysearch 要求 2.3 或更高版本。",
   "guide.cluster.test.connection.failed": "连接集群失败。",
+  "guide.cluster.test.connection.localhost":
+    "集群地址不能使用本地地址，请填写网关可访问的远程地址。",
   "guide.cluster.validate.elasticsearch_version_too_old":
-    "Elasticsearch 版本太旧。",
+    "Easysearch 版本太旧。",
   "guide.cluster.validate.elasticsearch_indices_exists":
     "目标群集中已存在一些相关索引。",
   "guide.cluster.validate.elasticsearch_template_exists":
     "目标群集中已存在一些相关模板。",
-  "guide.cluster.validate.default": "目标群集中已存在一些相关数据。",
+  "guide.cluster.validate.default": "目标群集中检测到已有数据。",
+  "guide.cluster.validate.localhost_address": "无法使用本地地址注册集群。",
+  "guide.cluster.validate.localhost.sub":
+    "请将集群地址修改为网关可访问的远程地址后重新检测。",
   "guide.cluster.validate.sub":
-    "在其他终端工具中执行以下请求可以删除现有数据，但可能会丢失数据。",
-  "guide.cluster.validate.sub.strong": "[风险自负！]",
+    "如果确认要继续，可以在其他终端工具中执行以下请求清理现有数据，但可能会丢失数据。",
+  "guide.cluster.validate.sub.strong": "[请谨慎操作！]",
+  "guide.cluster.validate.refresh": "重新检测",
   "guide.cluster.skip": "跳过",
   "guide.cluster.skip.desc": "您也可以跳过此步骤并重用现有数据。",
   "guide.user.title": "初始化管理员账户",
@@ -45,11 +80,11 @@ export default {
   "guide.confirm.password.validate": "您输入的两次密码不一致！",
   "guide.password.strength.invalid": "密码未满足所有安全要求。",
   "guide.password.rules.title": "密码必须符合以下规则",
-  "guide.password.rule.length": "长度至少为 8 个字符",
+  "guide.password.rule.length": "长度至少为 10 个字符",
   "guide.password.rule.uppercase": "至少一个大写字母 (A-Z)",
   "guide.password.rule.lowercase": "至少一个小写字母 (a-z)",
   "guide.password.rule.digit": "至少一个数字 (0-9)",
-  "guide.password.rule.special": "至少一个特殊字符",
+  "guide.password.rule.special": "至少一个特殊字符（!@#%^&*_+-=?）",
   "guide.credential_secret": "凭据密钥",
   "guide.credential_secret.required": "请输入凭据密钥！",
   "guide.credential_secret.tips":
@@ -67,10 +102,23 @@ export default {
 
   "guide.completed": "初始化完成！",
   "guide.enter.console": `进入 ${APP_DOMAIN} Console`,
+  "guide.initialization.finish.pending": "正在完成初始化...",
+  "guide.initialization.finish.pending.desc": "已进入最后一步，您可以先下载配置，初始化完成后再进入 Console。",
+  "guide.initialization.finish.pending.button": "初始化中",
+  "guide.initialization.finish.failed": "初始化未完成",
+  "guide.initialization.finish.failed.desc": "请根据下方错误详情检查配置后重试。",
+  "guide.initialization.finish.error.invalid_bootstrap_password":
+    "管理员密码无效，请检查是否满足安全要求后重试。",
+  "guide.initialization.finish.error.bootstrap_password_strength":
+    "管理员密码未满足安全要求，请修改后重试。",
+  "guide.initialization.finish.error.bootstrap_password_required":
+    "已启用重置管理员账户，请填写管理员密码。",
+  "guide.initialization.finish.error.bootstrap_username_required":
+    "已启用重置管理员账户，请填写管理员用户名。",
 
   "health.modal.title": "服务受限",
   "health.modal.desc":
-    "请检查 Console 相关服务状态，以确保 Console 能正常运行。",
+    "请点击上方的服务受限，以确保系统集群正常运行。",
   "health.modal.services.title": "服务状态",
 
   "guide.startup.modal.title": `欢迎使用 ${APP_DOMAIN} Console`,

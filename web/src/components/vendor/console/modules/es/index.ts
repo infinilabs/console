@@ -149,7 +149,7 @@ export function saveCommonCommand(params: any) {
   if (authorizationHeader) {
     headers["Authorization"] = authorizationHeader;
   }
-  let url = window.routerBase.replace(/\/+$/, "") + `${pathPrefix}//elasticsearch/command`;
+  let url = window.routerBase.replace(/\/+$/, "") + `${pathPrefix}/elasticsearch/command`;
   return fetch(url, {
     method: "POST",
     body: JSON.stringify(params),

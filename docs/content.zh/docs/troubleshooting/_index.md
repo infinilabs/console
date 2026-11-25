@@ -75,6 +75,24 @@ POST /.infini_cluster/_update_by_query?conflicts=proceed
 }
 ```
 
+### 外部修改系统集群密码后 Console 无法启动
+
+#### 问题描述
+
+如果在 Easysearch / Elasticsearch 外部直接修改了 Console 系统集群账号密码，Console 本地保存的 `SYSTEM_CLUSTER_PASS` 会失效，启动时将无法连接系统集群。
+
+#### 解决方案
+
+在 Console 安装目录执行恢复命令，更新本地系统集群密码；如果用户名也一起变更，可以同时指定：
+
+```bash
+./console recovery -pass 'new-password'
+./console recovery -user admin -pass 'new-password'
+printf '%s' 'new-password' | ./console recovery -stdin
+```
+
+执行完成后重启 Console 即可。
+
 ### 启动报错
 
 ```

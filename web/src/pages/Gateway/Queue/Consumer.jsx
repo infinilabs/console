@@ -45,13 +45,13 @@ export default (props) => {
 
   const columns = [
     { 
-      title: "Group", 
+      title: formatMessage({ id: "gateway.queue.consumer.field.group" }),
       dataIndex: "group", 
       render: (text) => <AutoTextEllipsis >{text}</AutoTextEllipsis>,
       className: commonStyles.maxColumnWidth
     },
     { 
-      title: "LastActive", 
+      title: formatMessage({ id: "gateway.queue.consumer.field.last_active" }),
       dataIndex: "last_active",
       sortable: true,
       render: (text, record) => (
@@ -59,14 +59,18 @@ export default (props) => {
       ),
     },
     {
-      title: "Name",
+      title: formatMessage({ id: "table.field.name" }),
       dataIndex: "name",
       render: (text, record) => (
-        <Tooltip title={`ID:${record?.id}`}>{text}</Tooltip>
+        <Tooltip
+          title={`${formatMessage({ id: "table.field.id" })}: ${record?.id}`}
+        >
+          {text}
+        </Tooltip>
       ),
     },
-    { title: "Offset", dataIndex: "offset" },
-    { title: "Source", dataIndex: "source" },
+    { title: formatMessage({ id: "gateway.queue.field.offset" }), dataIndex: "offset" },
+    { title: formatMessage({ id: "gateway.queue.consumer.field.source" }), dataIndex: "source" },
     {
       title: formatMessage({ id: "table.field.actions" }),
       key: "action",
@@ -75,11 +79,11 @@ export default (props) => {
           {hasAuthority("gateway.instance:all") ? (
             <>
               <a onClick={() => showResetOffsetModal(queueID, record)}>
-                Reset Offset
+                {formatMessage({ id: "gateway.queue.consumer.action.reset_offset" })}
               </a>
               <Divider key="d3" type="vertical" />
               <Popconfirm
-                title="Sure to delete?"
+                title={formatMessage({ id: "app.message.confirm.delete" })}
                 onConfirm={() => onConsumerDelete([record.id])}
               >
                 <a>{formatMessage({ id: "form.button.delete" })}</a>
@@ -111,19 +115,30 @@ export default (props) => {
 
         let respSuccessCountText = "";
         if (respSuccessCount > 0) {
-          respSuccessCountText = `Success: ${respSuccessCount}`;
+          respSuccessCountText = formatMessage(
+            { id: "gateway.queue.message.partial_success" },
+            { count: respSuccessCount }
+          );
         }
         message.error(
-          `Delete consumers failed; ${
-            respSuccessCount > 0 ? respSuccessCountText : ""
-          }`
+          formatMessage(
+            { id: "gateway.queue.consumer.delete.error" },
+            {
+              detail: respSuccessCount > 0 ? ` ${respSuccessCountText}` : "",
+            }
+          )
         );
         break;
       }
     }
 
     if (respSuccessCount > 0) {
-      message.success(`Deleted ${respSuccessCount} consumers successfully`);
+      message.success(
+        formatMessage(
+          { id: "gateway.queue.consumer.delete.success" },
+          { count: respSuccessCount }
+        )
+      );
       //clear select state
       clearSelectedRows();
       setTimeout(() => {
@@ -181,7 +196,11 @@ export default (props) => {
         columns={columns}
         dataSource={data}
         rowKey={(row) => row?.id}
-        title={() => <span style={{ fontWeight: "bold" }}>Consumers</span>}
+        title={() => (
+          <span style={{ fontWeight: "bold" }}>
+            {formatMessage({ id: "gateway.queue.consumer.title" })}
+          </span>
+        )}
         rowSelection={rowSelection}
       />
       <ReestOffsetModal

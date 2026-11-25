@@ -81,12 +81,16 @@ describe('kuery functions', () => {
         expect(result).toEqual(expected);
       });
 
-      test('should return an ES multi_match query using default_field when fieldName is null', () => {
+      test('should return an ES multi_match query using explicit searchable fields when fieldName is null', () => {
+        const searchableFields = fields
+          .filter((field) => field.searchable && !field.scripted && !field.subType?.nested && field.name !== '_source')
+          .map((field) => field.name);
         const expected = {
           multi_match: {
             query: 200,
             type: 'best_fields',
             lenient: true,
+            fields: searchableFields,
           },
         };
         const node = nodeTypes.function.buildNode('is', null, 200);
@@ -95,9 +99,13 @@ describe('kuery functions', () => {
         expect(result).toEqual(expected);
       });
 
-      test('should return an ES query_string query using default_field when fieldName is null and value contains a wildcard', () => {
+      test('should return an ES query_string query using explicit searchable fields when fieldName is null and value contains a wildcard', () => {
+        const searchableFields = fields
+          .filter((field) => field.searchable && !field.scripted && !field.subType?.nested && field.name !== '_source')
+          .map((field) => field.name);
         const expected = {
           query_string: {
+            fields: searchableFields,
             query: 'jpg*',
           },
         };

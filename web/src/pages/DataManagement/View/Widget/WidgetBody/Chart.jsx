@@ -55,7 +55,9 @@ export default (props) => {
       fetchParamsCache,
       handleContextMenu,
       isFullScreen,
-      onResultChange
+      onResultChange,
+      lockInteractions,
+      autoApplyRangeFilter,
     } = props;
 
     const { series = [] } = record;
@@ -67,7 +69,11 @@ export default (props) => {
 
     const chartRef = useRef(null)
 
-    const isLockRef = useRef(isEdit || isFullScreen)
+    const getIsInteractionLocked = () =>
+      isEdit ||
+      (typeof lockInteractions === "boolean" ? lockInteractions : isFullScreen);
+
+    const isLockRef = useRef(getIsInteractionLocked())
 
     const fetchData = async (params, zoom, refresh) => {
       if (['iframe'].includes(type) || !params || !params.currentQueries) return;
@@ -113,7 +119,22 @@ export default (props) => {
         newRange = getZoomRange(zoom, range, isTimeSeries)
         rangeFilter = buildFilterRange(filter, time_field, newRange)
       }
-      const bucketSize = isTimeSeries ? getBucketSize(bucketSizeCache || bucket_size, newRange) : undefined
+      const rawBucketSize = bucketSizeCache || bucket_size;
+      const bucketSize = isTimeSeries
+        ? (rawBucketSize === 'auto' ? 'auto' : getBucketSize(rawBucketSize, newRange))
+        : undefined
+      // Dynamic bucket count for auto_date_histogram: 80 for >=7d, 120 otherwise
+      let autoBuckets;
+      if (bucketSize === 'auto' && newRange) {
+        try {
+          const bounds = calculateBounds(newRange, { forceNow: getForceNow() });
+          if (bounds && bounds.min && bounds.max) {
+            const rangeMs = bounds.max.valueOf() - bounds.min.valueOf();
+            const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+            autoBuckets = rangeMs >= sevenDaysMs ? 80 : 120;
+          }
+        } catch (e) { /* ignore */ }
+      }
       if (fetchParamsCache) {
         fetchParamsCache.current.bucketSize = bucketSize
       }
@@ -216,6 +237,7 @@ export default (props) => {
             sort: item.sort || [],
             formula: item.formula || 'a',
             bucket_size: bucketSize,
+            ...(autoBuckets ? { buckets: autoBuckets } : {}),
           }
         })
         const promises = bodys.map((item) => getWidgetData(item))
@@ -355,8 +377,8 @@ export default (props) => {
     }
 
     useEffect(() => {
-      isLockRef.current = isEdit || isFullScreen
-    }, [isEdit, isFullScreen])
+      isLockRef.current = getIsInteractionLocked()
+    }, [isEdit, isFullScreen, lockInteractions])
 
     const onChartElementClick = (data, callback) => {
       if (isLockRef.current) return;
@@ -397,7 +419,10 @@ export default (props) => {
       const { id, title, bucket_size, series = [] } = record;
       const { type } = series[0] || {}
       const { range, bucketSizeCache } = currentParams.currentQueries;
-      const bucketSize = currentParams?.isTimeSeries ? getBucketSize(bucketSizeCache || bucket_size, range) : undefined
+      const rawBucketSizeForRender = bucketSizeCache || bucket_size;
+      const bucketSize = currentParams?.isTimeSeries
+        ? (rawBucketSizeForRender === 'auto' ? 'auto' : getBucketSize(rawBucketSizeForRender, range))
+        : undefined
       const widget = WIDGETS.find((w) => w.type === type);
       let isGroup = false;
       if (result.data?.[0]?.group) {
@@ -430,10 +455,11 @@ export default (props) => {
               isTimeSeries={currentParams?.isTimeSeries}
               highlightRange={highlightRange}
               currentQueries={currentParams?.currentQueries || {}}
-              isLock={isEdit || isFullScreen}
+              isLock={getIsInteractionLocked()}
               isEdit={isEdit}
               isFullScreen={isFullScreen}
               handleContextMenu={handleContextMenu}
+              autoApplyRangeFilter={autoApplyRangeFilter}
               onChartElementClick={onChartElementClick}
             />
           )
@@ -521,7 +547,7 @@ export default (props) => {
       const isSingleMetric = series.length === 1;
 
       let newData = Array.isArray(data) ? data : [];
-      if (Number.isInteger(size)) {
+      if (Number.isInteger(size) && !currentParams?.isTimeSeries) {
         newData = newData.map((item) => { 
           item = Array.isArray(item) ? item : [];
           if(order == "desc"){
@@ -555,6 +581,15 @@ export default (props) => {
               name: isSingleMetric ? item.group : `${item.group}-${item.name}`,
             }))
           }
+          newData = [...newData].sort((a, b) => {
+            const timestampDiff = Number(a?.timestamp || 0) - Number(b?.timestamp || 0);
+            if (timestampDiff !== 0) {
+              return timestampDiff;
+            }
+            const nameA = `${a?.name || ""}`;
+            const nameB = `${b?.name || ""}`;
+            return nameA.localeCompare(nameB);
+          });
         } else {
           if (isGroup) {
             newData = newData.map((item) => ({
@@ -570,11 +605,11 @@ export default (props) => {
         }
 
       }
-      if (order === "desc") {
+      if (!currentParams?.isTimeSeries && order === "desc") {
         newData = newData.sort((a, b) => b.value - a.value)
       }
 
-      if (order === "asc") {
+      if (!currentParams?.isTimeSeries && order === "asc") {
         newData = newData.sort((a, b) => a.value - b.value)
       }
 

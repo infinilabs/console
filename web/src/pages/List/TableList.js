@@ -333,7 +333,7 @@ class TableList extends PureComponent {
     {
       title: '操作',
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.key}>
           <a onClick={() => this.handleUpdateModalVisible(true, record)}>配置</a>
           <Divider type="vertical" />
           <a href="">订阅警报</a>

@@ -9,8 +9,10 @@ import {
   Button,
   Input,
   message,
+  Icon,
+  Switch,
 } from "antd";
-import { formatMessage } from "umi/locale";
+import { formatMessage, getLocale } from "umi/locale";
 import useFetch from "@/lib/hooks/use_fetch";
 import { ESPrefix } from "@/services/common";
 import { useGlobal } from "@/layouts/GlobalContext";
@@ -25,7 +27,24 @@ import moment from "moment";
 import { formatter } from "@/lib/format";
 import { hasAuthority } from "@/utils/authority";
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
+
+const firstColumnIconStyle = {
+  marginRight: 8,
+  color: "#999",
+  fontSize: 12,
+};
+
+const displayOrDash = (value) => {
+  if (value === null || value === undefined) return "-";
+  const text = `${value}`.trim();
+  return text ? text : "-";
+};
+
+const isAdministratorUser = (record) =>
+  (record?.roles || []).some(
+    (role) => role?.id === "Administrator" || role?.name === "Administrator"
+  );
 
 const UserList = (props) => {
   const [queryParams, setQueryParams] = React.useState({});
@@ -58,40 +77,90 @@ const UserList = (props) => {
     },
     [setQueryParams]
   );
+  const onToggleEnabledClick = useCallback(
+    async (userID, enabled) => {
+      const actionUrl = enabled ? "/user/_enable" : "/user/_disable";
+      const res = await request(actionUrl, {
+        method: "POST",
+        body: [userID],
+      });
+      if (res?.acknowledged) {
+        message.success(formatMessage({ id: "app.message.operate.success" }));
+        onRefreshClick();
+        return;
+      }
+      message.error(formatMessage({ id: "app.message.operate.failed" }));
+    },
+    [setQueryParams]
+  );
+
+  const normalizeEnabled = (value) => value !== false;
+
   const columns = useMemo(
     () => [
       {
-        title: "Name",
+        title: formatMessage({ id: "system.security.user.table.name" }),
         dataIndex: "name",
+        render: (text) => (
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <Icon type="user" style={firstColumnIconStyle} />
+            <span>{displayOrDash(text)}</span>
+          </div>
+        ),
       },
       {
-        title: "Nickname",
+        title: formatMessage({ id: "system.security.user.table.nickname" }),
         dataIndex: "nick_name",
+        render: (val) => displayOrDash(val),
       },
       {
-        title: "Roles",
+        title: formatMessage({ id: "system.security.user.table.roles" }),
         dataIndex: "roles",
         render: (val) => {
-          return (val || []).map((role) => role.name).join(",");
+          const text = (val || []).map((role) => role.name).join(",");
+          return displayOrDash(text);
         },
       },
       {
-        title: "Phone",
+        title: formatMessage({ id: "system.security.user.table.phone" }),
         dataIndex: "phone",
+        render: (val) => displayOrDash(val),
       },
       {
-        title: "Email",
+        title: formatMessage({ id: "system.security.user.table.email" }),
         dataIndex: "email",
+        render: (val) => displayOrDash(val),
       },
       {
-        title: "Tags",
+        title: formatMessage({ id: "system.security.user.table.tags" }),
         dataIndex: "tags",
         render: (text) => {
-          return text;
+          return displayOrDash(text);
+        },
+      },
+      {
+        title: formatMessage({ id: "system.security.user.table.status" }),
+        dataIndex: "enabled",
+        render: (enabled, record) => {
+          if (isAdministratorUser(record)) {
+            return "-";
+          }
+          const checked = normalizeEnabled(enabled);
+          return (
+            <Switch
+              size="small"
+              checked={checked}
+              disabled={!hasAuthority("system.security:all")}
+              onChange={(nextChecked) =>
+                onToggleEnabledClick(record.id, nextChecked)
+              }
+            />
+          );
         },
       },
       {
         title: formatMessage({ id: "table.field.actions" }),
+        width: getLocale() === "zh-CN" ? 180 : 240,
         render: (text, record) => (
           <div>
             {hasAuthority("system.security:all") ? (
@@ -100,21 +169,25 @@ const UserList = (props) => {
                   key="permission"
                   to={`/system/security/user/edit/${record.id}`}
                 >
-                  Edit
+                  {formatMessage({ id: "form.button.edit" })}
                 </Link>
                 <Divider key="d2" type="vertical" />
                 <Popconfirm
-                  title="Sure to delete?"
+                  title={formatMessage({
+                    id: "system.security.confirm.delete",
+                  })}
                   onConfirm={() => onDeleteClick(record.id)}
                 >
-                  <a>Delete</a>
+                  <a>{formatMessage({ id: "form.button.delete" })}</a>
                 </Popconfirm>
                 <Divider key="d3" type="vertical" />
                 <Link
                   key="reset_password"
                   to={`/system/security/user/password/${record.id}`}
                 >
-                  Reset Password
+                  {formatMessage({
+                    id: "system.security.user.action.reset_password",
+                  })}
                 </Link>
               </>
             ) : null}
@@ -123,7 +196,7 @@ const UserList = (props) => {
       },
     ],
 
-    [value]
+    [value, onToggleEnabledClick]
   );
   const { data: users, total } = React.useMemo(() => {
     setIsLoading(loading);
@@ -174,10 +247,12 @@ const UserList = (props) => {
         }}
       >
         <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-          <Search
+          <SearchInput
             allowClear
-            placeholder="Type keyword to search"
-            enterButton="Search"
+            placeholder={formatMessage({
+              id: "system.security.search.placeholder",
+            })}
+            enterButton={formatMessage({ id: "form.button.search" })}
             onSearch={(value) => {
               onSearchClick(value);
             }}
@@ -224,7 +299,10 @@ const UserList = (props) => {
           total: total?.value || total,
           showSizeChanger: true,
           showTotal: (total, range) =>
-            `${range[0]}-${range[1]} of ${total} items`,
+            formatMessage(
+              { id: "system.security.pagination.total" },
+              { start: range[0], end: range[1], total }
+            ),
         }}
         columns={columns}
         onChange={handleTableChange}

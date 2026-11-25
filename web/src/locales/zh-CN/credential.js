@@ -15,8 +15,17 @@ export default {
   "credential.manage.drawer.edit.title": "凭据详情",
 
   "credential.manage.form.type": "凭据类型",
+  "credential.manage.form.type.required": "请选择凭据类型！",
   "credential.manage.form.name": "凭据名称",
+  "credential.manage.form.name.required": "请输入凭据名称！",
   "credential.manage.form.username": "用户名",
+  "credential.manage.form.username.required": "请输入用户名！",
   "credential.manage.form.password": "密码",
+  "credential.manage.form.password.required": "请输入密码！",
+  "credential.manage.form.password.placeholder.edit": "原始密码不会显示",
+  "credential.manage.form.token": "Token",
+  "credential.manage.form.token.required": "请输入 Token！",
+  "credential.manage.form.token.placeholder": "请输入 Token！",
+  "credential.manage.form.token.placeholder.edit": "原始 Token 不会显示",
   "credential.manage.form.tags": "标签",
 };

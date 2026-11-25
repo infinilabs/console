@@ -2,9 +2,29 @@ package v1
 
 import (
 	"math"
+	"net/http"
 	"testing"
 	"time"
 )
+
+func TestGetMetricRangeAndBucketSize_AutoBucketSize(t *testing.T) {
+	handler := APIHandler{}
+	req, err := http.NewRequest("GET", "https://infinilabs.com/api/?bucket_size=auto&min=auto&max=auto", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	bucketSize, min, max, err := handler.GetMetricRangeAndBucketSize(req, "", "", 15)
+	if err != nil {
+		t.Fatalf("expected no error for bucket_size=auto, got: %v", err)
+	}
+	if bucketSize <= 0 {
+		t.Fatalf("expected positive bucket size, got: %d", bucketSize)
+	}
+	if max < min {
+		t.Fatalf("expected max >= min, got min=%d max=%d", min, max)
+	}
+}
 
 var defaultActualTargetPoints = 120                // Default target points for bucket size calculation
 var maxBucketSizeGlobal = 24 * time.Hour.Seconds() // 1 day in seconds

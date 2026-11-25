@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Tooltip, Progress, Icon, Spin } from "antd";
+import { Tooltip, Progress, Icon } from "antd";
 import { formatter } from "@/utils/format";
 import { formatUtcTimeToLocal } from "@/utils/utils";
 import { formatMessage } from "umi/locale";
@@ -14,7 +14,7 @@ export default (props) => {
       {...props}
       columns={[
         {
-          title: "Name",
+          title: formatMessage({ id: "overview.column.name" }),
           dataIndex: "name",
           render: (text, record) => {
             return (
@@ -38,14 +38,20 @@ export default (props) => {
                     <span>{record.metadata?.index_name}</span>
                   </div>
                 </Tooltip>
-                <Spin />
               </>
             );
           },
         },
-        {
-          title: "Health",
-          dataIndex: "health_status",
+{
+  title: formatMessage({ id: "overview.column.cluster" }),
+  dataIndex: "cluster_name",
+  render: (text, record) => {
+    return record.metadata?.cluster_name || "N/A";
+  },
+},
+{
+  title: formatMessage({ id: "overview.column.health" }),
+  dataIndex: "health_status",
           render: (text, record) => {
             return (
               <Tooltip
@@ -80,47 +86,44 @@ export default (props) => {
           },
         },
         {
-          title: "Status",
+          title: formatMessage({ id: "overview.column.status" }),
           dataIndex: "index_status",
           render: (text, record) => {
             return record.metadata?.labels?.state ?? "N/A";
           },
         },
         {
-          title: "Store Size",
+          title: formatMessage({ id: "overview.column.store_size" }),
           dataIndex: "store_size",
           render: (text, record) => {
-            return record.summary?.index_info?.store_size?.toUpperCase() || "N/A";
+            return formatter.bytes(record.summary?.store_in_bytes) || "N/A";
           },
         },
         {
-          title: "Shards",
+          title: formatMessage({ id: "overview.column.shards" }),
           dataIndex: "Shards",
           render: (text, record) => {
+            const shards = record.summary?.shards || 0;
+            const replicas = record.summary?.replicas || 0;
             return (
               <Tooltip
                 title={
                   <span>
-                    Unassigned Shards:
-                    {record.summary?.unassigned_shards || 0}
-                    <br />
                     Shards:
-                    {record.summary?.index_info?.shards || 0}
+                    {shards}
                     <br />
                     Replicas:
-                    {record.summary?.index_info?.replicas || 0}
+                    {replicas}
                   </span>
                 }
               >
-                {record.summary?.unassigned_shards || 0} /{" "}
-                {record.summary?.index_info?.shards ||
-                  0 + (record.summary?.index_info?.replicas || 0)}
+                {shards} / {shards + replicas}
               </Tooltip>
             );
           },
         },
         {
-          title: "Docs",
+          title: formatMessage({ id: "overview.column.docs" }),
           dataIndex: "Docs",
           render: (text, record) => {
             return (
@@ -128,15 +131,15 @@ export default (props) => {
                 title={
                   <span>
                     Deleted:
-                    {formatter.number(record.summary?.docs?.deleted || 0)}
+                    {formatter.number(record.summary?.docs_deleted || 0)}
                     <br />
                     Total:
-                    {formatter.number(record.summary?.docs?.count || 0)}
+                    {formatter.number(record.summary?.docs_count || 0)}
                   </span>
                 }
               >
-                {formatter.numberToHuman(record.summary?.docs?.deleted)} /{" "}
-                {formatter.numberToHuman(record.summary?.docs?.count)}
+                {formatter.number(record.summary?.docs_deleted || 0)} /{" "}
+                {formatter.number(record.summary?.docs_count || 0)}
               </Tooltip>
             );
           },

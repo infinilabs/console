@@ -51,7 +51,7 @@ export default forwardRef((props, ref) => {
   return (
     <Modal
       visible={visible}
-      wrapClassName={styles.systemLicence}
+      className={styles.systemLicence}
       closable
       footer={null}
       onCancel={onClose}

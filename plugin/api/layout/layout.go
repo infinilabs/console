@@ -78,7 +78,7 @@ func (h *LayoutAPI) getLayout(w http.ResponseWriter, req *http.Request, ps httpr
 	obj := model.Layout{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":   id,
@@ -100,7 +100,7 @@ func (h *LayoutAPI) updateLayout(w http.ResponseWriter, req *http.Request, ps ht
 	oldLayout := model.Layout{}
 
 	oldLayout.ID = id
-	exists, err := orm.Get(&oldLayout)
+	exists, err := orm.GetV2(orm.NewContext(), &oldLayout)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,
@@ -141,7 +141,7 @@ func (h *LayoutAPI) deleteLayout(w http.ResponseWriter, req *http.Request, ps ht
 	obj := model.Layout{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,

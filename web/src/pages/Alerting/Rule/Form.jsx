@@ -67,12 +67,15 @@ const tailFormItemLayout = {
 };
 
 const RuleForm = (props) => {
-  const { submitLoading } = props;
+  const { submitLoading, clusterList = [] } = props;
   const editValue = props.value || {};
-  const { getFieldDecorator } = props.form;
+  const { getFieldDecorator, setFieldsValue } = props.form;
   const history = useHistory();
   const [recoveryEnabled, setRecoveryEnabled] = useState(
     editValue?.recovery_notification_config?.event_enabled || false
+  );
+  const [ignoreTimeFilter, setIgnoreTimeFilter] = useState(
+    Boolean(editValue?.resource?.ignore_time_filter)
   );
 
   const [objectFields, setObjectFields] = useState({});
@@ -272,74 +275,71 @@ const RuleForm = (props) => {
     // }, 200);
   }, [props.form]);
 
-  const handleSubmit = useCallback(
-    (parmas) => {
-      props.form.validateFields((err, values) => {
-        if (err) {
-          if (parmas.is_test) {
-            message.error("please check rule config!");
-          }
-          return false;
+  const handleSubmit = (parmas) => {
+    props.form.validateFields((err, values) => {
+      if (err) {
+        if (parmas.is_test) {
+          message.error("please check rule config!");
         }
+        return false;
+      }
 
-        let newValues = cloneDeep(values);
+      let newValues = cloneDeep(values);
 
-        switch (parmas?.category) {
-          case "notification":
-            newValues.notification_config[
-              "normal"
-            ] = newValues.notification_config["normal"]
-              .filter((item, i) => i == parmas.channel_index)
-              .map((item) => ({
-                ...item,
-                ...(parmas?.channel || {}),
-                enabled: true,
-              }));
-            newValues.notification_config["escalation"] = [];
-            newValues.recovery_notification_config["normal"] = [];
-            break;
-          case "escalation":
-            newValues.notification_config[
-              "escalation"
-            ] = newValues.notification_config["escalation"]
-              .filter((item, i) => i == parmas.channel_index)
-              .map((item) => ({
-                ...item,
-                ...(parmas?.channel || {}),
-                enabled: true,
-              }));
-            newValues.notification_config["normal"] = [];
-            newValues.recovery_notification_config["normal"] = [];
-            break;
-          case "recover_notification":
-            newValues.recovery_notification_config[
-              "normal"
-            ] = newValues.recovery_notification_config["normal"]
-              .filter((item, i) => i == parmas.channel_index)
-              .map((item) => ({
-                ...item,
-                ...(parmas?.channel || {}),
-                enabled: true,
-              }));
-            newValues.notification_config["normal"] = [];
-            newValues.notification_config["escalation"] = [];
-            break;
-        }
+      switch (parmas?.category) {
+        case "notification":
+          newValues.notification_config[
+            "normal"
+          ] = newValues.notification_config["normal"]
+            .filter((item, i) => i == parmas.channel_index)
+            .map((item) => ({
+              ...item,
+              ...(parmas?.channel || {}),
+              enabled: true,
+            }));
+          newValues.notification_config["escalation"] = [];
+          newValues.recovery_notification_config["normal"] = [];
+          break;
+        case "escalation":
+          newValues.notification_config[
+            "escalation"
+          ] = newValues.notification_config["escalation"]
+            .filter((item, i) => i == parmas.channel_index)
+            .map((item) => ({
+              ...item,
+              ...(parmas?.channel || {}),
+              enabled: true,
+            }));
+          newValues.notification_config["normal"] = [];
+          newValues.recovery_notification_config["normal"] = [];
+          break;
+        case "recover_notification":
+          newValues.recovery_notification_config[
+            "normal"
+          ] = newValues.recovery_notification_config["normal"]
+            .filter((item, i) => i == parmas.channel_index)
+            .map((item) => ({
+              ...item,
+              ...(parmas?.channel || {}),
+              enabled: true,
+            }));
+          newValues.notification_config["normal"] = [];
+          newValues.notification_config["escalation"] = [];
+          break;
+      }
 
-        const alert_objects = formatAlertObjects(newValues);
+      const alert_objects = formatAlertObjects(newValues);
 
-        if (parmas?.is_test) {
-          onSendTestClick(alert_objects[0], parmas?.category);
-          return;
-        }
+      if (parmas?.is_test) {
+        onSendTestClick(alert_objects[0], parmas?.category);
+        return;
+      }
 
-        if (typeof props.onSaveClick == "function") {
-          props.onSaveClick(alert_objects);
-        }
-      });
-    },
-    [props.form]
-  );
+      if (typeof props.onSaveClick == "function") {
+        props.onSaveClick(alert_objects);
+      }
+    });
+  };
 
   const [testState, setTestState] = useState({ loading: false, result: "" });
   const onSendTestClick = useCallback(async (values, type) => {
@@ -383,14 +383,24 @@ const RuleForm = (props) => {
     editValue?.resource?.objects || []
   );
   const selectedClusterDefault = editValue.id
-    ? {
+    ? clusterList.find(
+        (item) => item.id === editValue?.resource?.resource_id
+      ) || {
         id: editValue.resource.resource_id,
         name: editValue.resource.resource_name,
+        distribution: editValue?.resource?.distribution,
       }
     : props.selectedCluster;
-  const [selectedCluster, setSelectedCluster] = useState(
-    selectedClusterDefault
-  );
+  const [selectedCluster, setSelectedCluster] = useState(selectedClusterDefault);
+  useEffect(() => {
+    if (!editValue.id) return;
+    const selectedClusterFromList = clusterList.find(
+      (item) => item.id === editValue?.resource?.resource_id
+    );
+    if (selectedClusterFromList) {
+      setSelectedCluster(selectedClusterFromList);
+    }
+  }, [clusterList, editValue.id, editValue?.resource?.resource_id]);
   if (!editValue.id) {
     useMemo(() => {
       setSelectedCluster(props.selectedCluster);
@@ -478,7 +488,7 @@ const RuleForm = (props) => {
           >
             {props.clusterList.length > 0 ? (
               <ClusterSelect 
-                width={300}
+                width={400}
                 dropdownWidth={400}
                 selectedCluster={selectedCluster} 
                 onChange={(item) => {
@@ -529,7 +539,9 @@ const RuleForm = (props) => {
             })}
             extra={
               <Popover
-                title={"Example"}
+                title={formatMessage({
+                  id: "alert.rule.form.title.example",
+                })}
                 content={
                   <Editor
                     height="300px"
@@ -553,7 +565,11 @@ const RuleForm = (props) => {
                 }
                 trigger="click"
               >
-                <a>Example</a>
+                <a>
+                  {formatMessage({
+                    id: "alert.rule.form.title.example",
+                  })}
+                </a>
               </Popover>
             }
           >
@@ -604,6 +620,30 @@ const RuleForm = (props) => {
             <Col span={11} offset={2} style={{ paddingLeft: 22 }}>
               <Form.Item
                 label={formatMessage({
+                  id: "alert.rule.form.label.ignore_time_filter",
+                })}
+                extra={formatMessage({
+                  id: "alert.rule.form.help.ignore_time_filter",
+                })}
+              >
+                {getFieldDecorator("resource.ignore_time_filter", {
+                  valuePropName: "checked",
+                  initialValue: ignoreTimeFilter,
+                })(
+                  <Switch
+                    onChange={(checked) => {
+                      setIgnoreTimeFilter(checked);
+                      if (checked) {
+                        setFieldsValue({
+                          "resource.time_field": undefined,
+                        });
+                      }
+                    }}
+                  />
+                )}
+              </Form.Item>
+              <Form.Item
+                label={formatMessage({
                   id: "alert.rule.form.label.time_field",
                 })}
               >
@@ -611,12 +651,13 @@ const RuleForm = (props) => {
                   initialValue: editValue?.resource?.time_field,
                   rules: [
                     {
-                      required: true,
+                      required: !ignoreTimeFilter,
                       message: "Please select time field!",
                     },
                   ],
                 })(
                   <Select
+                    disabled={ignoreTimeFilter}
                     allowClear
                     showSearch
                     placeholder="Type to search time field"
@@ -803,6 +844,15 @@ const RuleForm = (props) => {
           )}
 
           <Form.Item {...tailFormItemLayout}>
+            {typeof props.onSyncTemplateClick === "function" && (
+              <Button
+                loading={props.syncLoading}
+                style={{ marginRight: 8 }}
+                onClick={props.onSyncTemplateClick}
+              >
+                {formatMessage({ id: "alert.rule.form.template.sync" })}
+              </Button>
+            )}
             <Button
               loading={submitLoading}
               type="primary"

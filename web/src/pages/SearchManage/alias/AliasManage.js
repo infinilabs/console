@@ -147,7 +147,7 @@ class AliasManage extends PureComponent {
     {
       title: "操作",
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.alias}>
           {/*<a onClick={() => this.handleUpdateModalVisible(true, record)}>别名设置</a>*/}
           {/*<Divider type="vertical" />*/}
           <Popconfirm
@@ -342,7 +342,7 @@ class AliasManage extends PureComponent {
     }
     const { indices } = this.props.alias;
     return (
-      <Fragment>
+      <Fragment key="alias">
         <Card bordered={false}>
           <div className={styles.tableList}>
             <div className={styles.tableListForm}>{this.renderForm()}</div>
@@ -408,16 +408,22 @@ class AliasIndexTable extends React.Component {
     {
       title: "索引路由",
       dataIndex: "index_routing",
+      render: (text) => {
+        return text || text === 0 ? text : "-";
+      },
     },
     {
       title: "搜索路由",
       dataIndex: "search_routing",
+      render: (text) => {
+        return text || text === 0 ? text : "-";
+      },
     },
     {
       title: "过滤查询",
       dataIndex: "filter",
       render: (text) => {
-        return text ? JSON.stringify(text) : "";
+        return text ? JSON.stringify(text) : "-";
       },
     },
     {

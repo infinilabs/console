@@ -52,6 +52,22 @@ const templateHtml = `
   </dl>`;
 const doTemplate = template(noWhiteSpace(templateHtml));
 
+function hasHighlightForField(highlights: Record<string, any>, fieldName: string) {
+  if (!highlights || !fieldName) {
+    return false;
+  }
+  if (highlights[fieldName]) {
+    return true;
+  }
+  if (highlights[`${fieldName}.keyword`]) {
+    return true;
+  }
+  return keys(highlights).some(
+    (highlightField) =>
+      highlightField.startsWith(`${fieldName}.`) || fieldName.startsWith(`${highlightField}.`)
+  );
+}
+
 export class SourceFormat extends FieldFormat {
   static id = FIELD_FORMAT_IDS._SOURCE;
   static title = '_source';
@@ -75,7 +91,7 @@ export class SourceFormat extends FieldFormat {
     const isShortDots = this.getConfig!(UI_SETTINGS.SHORT_DOTS_ENABLE);
 
     keys(formatted).forEach((key) => {
-      const pairs = highlights[key] ? highlightPairs : sourcePairs;
+      const pairs = hasHighlightForField(highlights, key) ? highlightPairs : sourcePairs;
       const newField = isShortDots ? shortenDottedString(key) : key;
       const val = formatted[key];
       pairs.push([newField, val]);

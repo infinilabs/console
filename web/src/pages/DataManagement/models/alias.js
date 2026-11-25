@@ -1,6 +1,17 @@
 import { getAliasList, doAlias } from "@/services/alias";
 import { getIndices } from "@/services/indices";
 
+const normalizeAliasDetail = (item = {}) => {
+  const indexes = Array.isArray(item.indexes) ? item.indexes : [];
+  const explicitWriteIndex = indexes.find((index) => index?.is_write_index)?.index;
+
+  return {
+    ...item,
+    indexes,
+    write_index: item.write_index || explicitWriteIndex || "",
+  };
+};
+
 export default {
   namespace: "alias",
 
@@ -10,7 +21,7 @@ export default {
       const res = yield call(getAliasList, payload);
       let aliasList = [];
       for (let k in res) {
-        aliasList.push(res[k]);
+        aliasList.push(normalizeAliasDetail(res[k]));
       }
       yield put({
         type: "saveData",

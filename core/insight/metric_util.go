@@ -35,7 +35,6 @@ import (
 
 	log "github.com/cihub/seelog"
 	"infini.sh/console/core/insight/function"
-	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
 )
 
@@ -196,11 +195,15 @@ func GenerateQuery(metric *Metric) (interface{}, error) {
 	)
 	if metric.BucketSize != "" && metric.TimeField != "" {
 		useDateHistogram = true
-		if metric.BucketSize == "auto" {
+		bucketSize := strings.TrimSpace(metric.BucketSize)
+		if bucketSize == "" {
+			bucketSize = "auto"
+		}
+		if strings.EqualFold(bucketSize, "auto") {
 			dateHistogramAggName = "auto_date_histogram"
 			buckets := metric.Buckets
 			if buckets == 0 {
-				buckets = 2
+				buckets = 30
 			}
 			dateHistogramAgg = util.MapStr{
 				"field":   metric.TimeField,
@@ -208,19 +211,10 @@ func GenerateQuery(metric *Metric) (interface{}, error) {
 			}
 		} else {
 			dateHistogramAggName = "date_histogram"
-			verInfo := elastic.GetClient(metric.ClusterId).GetVersion()
-
-			if verInfo.Number == "" {
-				panic("invalid version")
-			}
-
-			intervalField, err := elastic.GetDateHistogramIntervalField(verInfo.Distribution, verInfo.Number, metric.BucketSize)
-			if err != nil {
-				return nil, fmt.Errorf("get interval field error: %w", err)
-			}
 			dateHistogramAgg = util.MapStr{
-				"field":       metric.TimeField,
-				intervalField: metric.BucketSize,
+				"field":         metric.TimeField,
+				"interval":      bucketSize,
+				"min_doc_count": 0,
 			}
 		}
 	}
@@ -253,6 +247,9 @@ func GenerateQuery(metric *Metric) (interface{}, error) {
 			termsCfg := util.MapStr{
 				"field": groups[i].Field,
 				"size":  limit,
+			}
+			if groups[i].Missing != "" {
+				termsCfg["missing"] = groups[i].Missing
 			}
 			if i == grpLength-1 && len(metric.Sort) > 0 {
 				//use bucket sort instead of terms order when time after group
@@ -610,6 +607,7 @@ func MergeGroupValues(metricData []MetricData) []MetricData {
 		return metricData
 	}
 	grpMd := map[string]MetricData{}
+	groupOrder := make([]string, 0, len(metricData))
 	for _, md := range metricData {
 		if len(md.Groups) == 0 {
 			continue
@@ -629,8 +627,10 @@ func MergeGroupValues(metricData []MetricData) []MetricData {
 					existingMd.Data[k] = v
 				}
 			}
+			grpMd[groupKey] = existingMd
 		} else {
 			grpMd[groupKey] = md
+			groupOrder = append(groupOrder, groupKey)
 		}
 	}
 	// sort the merged metric data by timestamp
@@ -648,8 +648,10 @@ func MergeGroupValues(metricData []MetricData) []MetricData {
 	}
 	// Convert map to slice
 	mergedMetricData := make([]MetricData, 0, len(grpMd))
-	for _, md := range grpMd {
-		mergedMetricData = append(mergedMetricData, md)
+	for _, groupKey := range groupOrder {
+		if md, ok := grpMd[groupKey]; ok {
+			mergedMetricData = append(mergedMetricData, md)
+		}
 	}
 	return mergedMetricData
 }

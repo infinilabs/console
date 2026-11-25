@@ -1,3 +1,13 @@
+import fs from 'fs';
+import path from 'path';
+
+const pluginRoutes = [];
+
+const pluginRoutePath = path.resolve('config','router.enterprise.js');
+if (fs.existsSync(pluginRoutePath)) {
+  pluginRoutes.push(...require(pluginRoutePath).default);
+}
+
 export default [
   // user
   {
@@ -125,6 +135,54 @@ export default [
             exact: false,
           },
           {
+            path: "/data/views/create",
+            name: "view.create",
+            component: "./DataManagement/IndexPatterns",
+            hideInMenu: true,
+            authority: ["data.view:all", "data.view:read"],
+            exact: false,
+          },
+          {
+            path: "/data/views/patterns",
+            component: "./DataManagement/IndexPatterns",
+            hideInMenu: true,
+            hideInBreadcrumb: true,
+            authority: ["data.view:all", "data.view:read"],
+            exact: false,
+          },
+          {
+            path: "/data/views/patterns/:id",
+            name: "view.detail",
+            component: "./DataManagement/IndexPatterns",
+            hideInMenu: true,
+            authority: ["data.view:all", "data.view:read"],
+            exact: false,
+          },
+          {
+            path: "/data/views/patterns/:id/:section",
+            component: "./DataManagement/IndexPatterns",
+            hideInMenu: true,
+            hideInBreadcrumb: true,
+            authority: ["data.view:all", "data.view:read"],
+            exact: false,
+          },
+          {
+            path: "/data/views/patterns/:id/:section/:name",
+            component: "./DataManagement/IndexPatterns",
+            hideInMenu: true,
+            hideInBreadcrumb: true,
+            authority: ["data.view:all", "data.view:read"],
+            exact: false,
+          },
+          {
+            path: "/data/views/patterns/:id/:section/:name/:action",
+            component: "./DataManagement/IndexPatterns",
+            hideInMenu: true,
+            hideInBreadcrumb: true,
+            authority: ["data.view:all", "data.view:read"],
+            exact: false,
+          },
+          {
             path: "/data/views",
             name: "view",
             component: "./DataManagement/IndexPatterns",
@@ -155,7 +213,7 @@ export default [
           },
         ],
       },
-
+      ...pluginRoutes,
       // alerting
       {
         path: "/alerting",
@@ -278,6 +336,11 @@ export default [
         ],
         routes: [
           {
+            path: "/resource/runtime",
+            hideInMenu: true,
+            hideInBreadcrumb: true,
+          },
+          {
             path: "/resource/runtime/instance/new",
             name: "runtime.new_instance",
             component: "./Gateway/Instance/new",
@@ -290,6 +353,11 @@ export default [
             component: "./Gateway/Instance/edit",
             hideInMenu: true,
             authority: ["gateway.instance:all"],
+          },
+          {
+            path: "/resource/runtime/instance/:instance_id",
+            hideInMenu: true,
+            hideInBreadcrumb: true,
           },
           {
             path: "/resource/runtime/instance/:instance_id/task",
@@ -381,6 +449,8 @@ export default [
         name: "system",
         icon: "setting",
         authority: [
+          "system.cluster:all",
+          "system.cluster:read",
           "system.credential:all",
           "system.credential:read",
           "system.security:all",
@@ -392,10 +462,26 @@ export default [
         ],
         routes: [
           {
+            path: "/system/settings",
+            name: "settings",
+            component: "./System/Settings/index",
+            authority: [
+              "system.cluster:all",
+              "system.cluster:read",
+              "system.smtp_server:all",
+              "system.smtp_server:read",
+            ],
+          },
+          {
             path: "/system/email_server",
-            name: "smtp_server",
-            component: "./System/Email/Server",
-            authority: ["system.smtp_server:all", "system.smtp_server:read"],
+            component: "./System/Settings/index",
+            hideInMenu: true,
+            authority: [
+              "system.cluster:all",
+              "system.cluster:read",
+              "system.smtp_server:all",
+              "system.smtp_server:read",
+            ],
           },
           {
             path: "/system/credential",

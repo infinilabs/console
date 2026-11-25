@@ -1,0 +1,107 @@
+.detail {
+  width: 0;
+  max-width: 100%;
+  min-width: 0;
+  min-width: 100%;
+  overflow: hidden;
+}
+
+.detailTabs {
+  min-width: 0;
+}
+
+.detailTabs :global(.ant-tabs-bar) {
+  margin-bottom: 12px;
+}
+
+.detailTabs :global(.ant-tabs-nav-container),
+.detailTabs :global(.ant-tabs-content),
+.detailTabs :global(.ant-tabs-tabpane) {
+  min-width: 0;
+}
+
+.tableWrap {
+  width: 0;
+  max-width: 100%;
+  min-width: 0;
+  min-width: 100%;
+  overflow: hidden;
+}
+
+.cmdlineWrap {
+  display: block;
+  width: 100%;
+  white-space: normal;
+  word-break: break-all;
+}
+
+.cellWrap {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  a, span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+}
+
+.cellIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  margin-right: 4px;
+  flex-shrink: 0;
+
+  :global(.anticon) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    line-height: 1;
+    font-size: 16px;
+    vertical-align: top;
+  }
+}
+
+.cellContent {
+  flex: 1;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  > a,
+  > span {
+    display: block;
+  }
+}
+
+.actionWrap {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.actionWrap :global(.ant-divider-vertical) {
+  align-self: flex-start;
+  margin: 0 8px;
+}
+
+.actionWrap :global(.ant-btn-link) {
+  height: auto;
+  padding: 0;
+}

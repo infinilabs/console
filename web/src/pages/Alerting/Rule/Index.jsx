@@ -8,6 +8,7 @@ import {
   Modal,
   Tag,
   Switch,
+  Tooltip,
 } from "antd";
 import {
   useCallback,
@@ -35,6 +36,22 @@ import NoData from "./components/NoData";
 import { HealthStatusCircle } from "@/components/infini/health_status_circle";
 import { getSystemClusterID } from "@/utils/setup";
 
+const displayOrDash = (value) => {
+  if (value === null || value === undefined) return "-";
+  const text = `${value}`.trim();
+  return text ? text : "-";
+};
+
+const normalizeRuleTimeValue = (value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+  return value.replace(
+    /(\.\d{3})\d+(Z|[+-]\d{2}:?\d{2})$/,
+    "$1$2"
+  );
+};
+
 export default (props) => {
   const ref = useRef(null);
   const [isLoading, setIsLoading] = React.useState();
@@ -59,18 +76,46 @@ export default (props) => {
     if (!ids || ids.length == 0) {
       return;
     }
-    let ruleInfo = await request(`/alerting/rule/info`, {
-      method: "POST",
-      body: ids,
-    });
+    try {
+      let ruleInfo = await request(`/alerting/rule/info`, {
+        method: "POST",
+        body: ids,
+      });
 
-    if (ruleInfo && !ruleInfo.error) {
+      const requestError = ruleInfo?.error;
       let tableData = dataSource?.data?.map((item) => {
-        item.info = ruleInfo?.[item.id] || {};
+        item.info =
+          ruleInfo?.[item.id] ||
+          (requestError
+            ? {
+                status_error: requestError,
+              }
+            : {});
+        item.infoLoaded = true;
         return item;
       });
       dataSource.data = tableData;
       // update dataSource
+      setTimeout(() => {
+        if (ref.current?.setDataSource) {
+          ref.current.setDataSource({ ...dataSource, data: tableData });
+        }
+      }, 500);
+    } catch (error) {
+      const errorMessage =
+        error?.message ||
+        formatMessage({
+          id: "alert.rule.status.load_failed",
+          defaultMessage: "Failed to load the latest alert status for this rule",
+        });
+      let tableData = dataSource?.data?.map((item) => {
+        item.info = {
+          status_error: errorMessage,
+        };
+        item.infoLoaded = true;
+        return item;
+      });
+      dataSource.data = tableData;
       setTimeout(() => {
         if (ref.current?.setDataSource) {
           ref.current.setDataSource({ ...dataSource, data: tableData });
@@ -168,15 +213,15 @@ export default (props) => {
 
   const showDeleteConfirm = useCallback((record) => {
     Modal.confirm({
-      title: "Are you sure delete this item?",
+      title: formatMessage({ id: "app.message.confirm.delete" }),
       content: (
         <ul style={{ listStyle: "initial" }}>
           <li>{record.name}</li>
         </ul>
       ),
-      okText: "Yes",
+      okText: formatMessage({ id: "form.button.ok" }),
       okType: "danger",
-      cancelText: "No",
+      cancelText: formatMessage({ id: "form.button.cancel" }),
       onOk() {
         onDelete([record.id]);
       },
@@ -185,7 +230,10 @@ export default (props) => {
 
   const batchDeleteConfirm = useCallback((records) => {
     Modal.confirm({
-      title: `Are you sure delete these ${records.length} items?`,
+      title: formatMessage(
+        { id: "app.message.confirm.delete.multiple" },
+        { count: records.length }
+      ),
       content: (
         <ul style={{ listStyle: "initial" }}>
           {records.map((item) => {
@@ -193,9 +241,9 @@ export default (props) => {
           })}
         </ul>
       ),
-      okText: "Yes",
+      okText: formatMessage({ id: "form.button.ok" }),
       okType: "danger",
-      cancelText: "No",
+      cancelText: formatMessage({ id: "form.button.cancel" }),
       onOk() {
         onDelete(records.map((item) => item.id));
       },
@@ -245,6 +293,46 @@ export default (props) => {
     return dataNew;
   };
 
+  const renderRuleStatus = (record) => {
+    if (!record?.infoLoaded) {
+      return <span style={{ width: 14, height: 14, display: "inline-block" }} />;
+    }
+    const indicator = (
+      <HealthStatusCircle status={RuleStautsColor[record.info?.status] || "gray"} />
+    );
+    if (record.info?.status_error) {
+      return <Tooltip title={record.info.status_error}>{indicator}</Tooltip>;
+    }
+    return indicator;
+  };
+
+  const formatRuleUpdatedTime = (updated, created) => {
+    const normalizedUpdated = normalizeRuleTimeValue(updated);
+    const parsed = moment(normalizedUpdated);
+    if (parsed.isValid() && parsed.year() > 1) {
+      return formatUtcTimeToLocal(normalizedUpdated);
+    }
+    const normalizedCreated = normalizeRuleTimeValue(created);
+    if (normalizedCreated) {
+      return formatUtcTimeToLocal(normalizedCreated);
+    }
+    return "-";
+  };
+
+  const pickRuleTimeField = (record, primaryField, fallbackField) => {
+    const primary = normalizeRuleTimeValue(record?.[primaryField]);
+    const fallback = normalizeRuleTimeValue(record?.[fallbackField]);
+    const primaryParsed = moment(primary);
+    if (primaryParsed.isValid() && primaryParsed.year() > 1) {
+      return primary;
+    }
+    const fallbackParsed = moment(fallback);
+    if (fallbackParsed.isValid() && fallbackParsed.year() > 1) {
+      return fallback;
+    }
+    return primary || fallback;
+  };
+
   const columns = [
     {
       title: formatMessage({ id: "alert.rule.table.columnns.category" }),
@@ -256,7 +344,7 @@ export default (props) => {
         return text ? (
           <Tag style={{ color: "rgb(0, 127, 255)" }}>{text}</Tag>
         ) : (
-          <span>{text}</span>
+          <span>-</span>
         );
       },
     },
@@ -272,8 +360,8 @@ export default (props) => {
             to={`/alerting/rule/${record.id}`}
             style={{ display: "flex", alignItems: "center", gap: 5 }}
           >
-            <HealthStatusCircle status={RuleStautsColor[record.info?.status]} />
-            <span>{text}</span>
+            {renderRuleStatus(record)}
+            <span>{displayOrDash(text)}</span>
           </Link>
         );
       },
@@ -283,6 +371,9 @@ export default (props) => {
       key: "tags",
       searchable: true,
       render: (text, record) => {
+        if (!record.tags || record.tags.length === 0) {
+          return "-";
+        }
         return record.tags?.map((item) => {
           return (
             <Tag key={item} style={{ color: "rgb(0, 127, 255)" }}>
@@ -297,15 +388,18 @@ export default (props) => {
         id: "alert.rule.table.columnns.last_notification_time",
       }),
       key: "info.last_notification_time",
-      render: (text, record) => (text ? moment(text).fromNow() : text),
+      render: (text, record) => (text ? moment(text).fromNow() : "-"),
     },
     {
       title: formatMessage({ id: "alert.rule.table.columnns.updated" }),
       key: "updated",
       sortable: true,
-      render: (text, record) => (
-        <span title={text}>{formatUtcTimeToLocal(text)}</span>
-      ),
+      render: (text, record) => {
+        const updated = pickRuleTimeField(record, "updated", "_updated");
+        const created = pickRuleTimeField(record, "created", "_created");
+        const displayUpdated = formatRuleUpdatedTime(updated, created);
+        return <span title={displayUpdated}>{displayUpdated}</span>;
+      },
     },
     {
       title: formatMessage({ id: "alert.rule.table.columnns.enabled" }),
@@ -410,7 +504,7 @@ export default (props) => {
         }}
         defaultQueryParams={{
           from: 0,
-          size: 10,
+          size: 20,
           sort: [[timeField, "desc"]],
         }}
         sortEnable={true}
@@ -421,8 +515,9 @@ export default (props) => {
           getExtra: (props) => [
             hasAuthority("alerting.rule:all")
               ? [
-                  <>
+                  <Fragment key="rule-import-export">
                     <Button
+                      key="rule-import"
                       type="primary"
                       icon="upload"
                       onClick={() => {
@@ -431,10 +526,20 @@ export default (props) => {
                     >
                       {formatMessage({ id: "app.action.import" })}
                     </Button>
+                    <Button
+                      key="rule-export"
+                      icon="download"
+                      onClick={() => {
+                        setExportVisible(true);
+                      }}
+                    >
+                      {formatMessage({ id: "form.button.export" })}
+                    </Button>
                     <Import
                       title={formatMessage({
                         id: "alert.rule.export-import.label",
                       })}
+                      exampleType="AlertRule"
                       visible={importVisible}
                       onSuccess={refresh}
                       onClose={() => setImportVisible(false)}
@@ -467,8 +572,9 @@ export default (props) => {
                         },
                       ]}
                     />
-                  </>,
+                  </Fragment>,
                   <Button
+                    key="rule-create"
                     type="primary"
                     icon="plus"
                     onClick={() => router.push(`/alerting/rule/new`)}
@@ -484,6 +590,7 @@ export default (props) => {
             hasAuthority("alerting.rule:all")
               ? [
                   <Button
+                    key="rule-enable"
                     type="primary"
                     icon="check-circle"
                     onClick={() => {
@@ -496,6 +603,7 @@ export default (props) => {
                     {formatMessage({ id: "form.button.enable" })}
                   </Button>,
                   <Button
+                    key="rule-disable"
                     type="danger"
                     icon="stop"
                     onClick={() => {
@@ -508,6 +616,7 @@ export default (props) => {
                     {formatMessage({ id: "form.button.disable" })}
                   </Button>,
                   <Button
+                    key="rule-export"
                     type="primary"
                     icon="download"
                     onClick={() => {
@@ -517,6 +626,7 @@ export default (props) => {
                     {formatMessage({ id: "form.button.export" })}
                   </Button>,
                   <Button
+                    key="rule-delete"
                     type="danger"
                     icon="delete"
                     onClick={() => {

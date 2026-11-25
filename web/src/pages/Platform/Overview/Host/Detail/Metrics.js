@@ -83,12 +83,12 @@ const Agent = (props) => {
       title={formatMessage({ id: "host.detail.agent.title" })}
       action={`/host/${props.id}/agent/info`}
       rowKey="agent_id"
-      columns={[
-        {
-          title: "Endpoint",
-          dataIndex: "endpoint",
-          key: "endpoint",
-        },
+        columns={[
+          {
+            title: formatMessage({ id: "overview.column.endpoint" }),
+            dataIndex: "endpoint",
+            key: "endpoint",
+          },
         {
           title: formatMessage({ id: "host.detail.table.column.status" }),
           dataIndex: "status",
@@ -136,12 +136,12 @@ const Process = (props) => {
       title={formatMessage({ id: "host.detail.processes.title" })}
       action={`/host/${props.id}/processes`}
       rowKey="pid"
-      columns={[
-        {
-          title: "PID",
-          dataIndex: "pid",
-          key: "pid",
-        },
+        columns={[
+          {
+            title: formatMessage({ id: "overview.column.pid" }),
+            dataIndex: "pid",
+            key: "pid",
+          },
         {
           title: formatMessage({ id: "host.detail.table.column.cluster" }),
           dataIndex: "cluster_name",

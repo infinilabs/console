@@ -6,6 +6,10 @@ import Result from "@/components/Result";
 import { router } from "umi";
 import { setAuthority } from "@/utils/authority";
 import { reloadAuthorized } from "@/utils/Authorized";
+import {
+  clearStoredLoginResponse,
+  storeLoginResponse,
+} from "@/utils/auth_session";
 
 const actions = (
   <div>
@@ -20,9 +24,9 @@ const actions = (
 const SSOSuccess = ({ location }) => {
   useEffect(() => {
     if (location?.query?.payload) {
-      localStorage.setItem("login-response", location.query.payload);
+      const loginResponse = storeLoginResponse(location.query.payload);
       try {
-        const query = JSON.parse(location.query.payload);
+        const query = loginResponse || JSON.parse(location.query.payload);
         if (query?.privilege) {
           setAuthority(query.privilege);
           reloadAuthorized();
@@ -33,7 +37,7 @@ const SSOSuccess = ({ location }) => {
         localStorage.setItem("infini-console-authority", "");
       }
     } else {
-      localStorage.setItem("login-response", "");
+      clearStoredLoginResponse();
     }
     setTimeout(() => {
       router.push("/");

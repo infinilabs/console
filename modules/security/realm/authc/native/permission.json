@@ -397,9 +397,6 @@
     {"name": "indices.field_caps", "methods":["get", "post"],
       "path": "/:index_name/_field_caps"
     },
-    {"name": "indices.exists_template", "methods":["head"],
-      "path": "/_template/:template_name"
-    },
     {"name": "indices.field_usage_stats", "methods":["get"],
       "path": "/:index_name/_field_usage_stats"
     },

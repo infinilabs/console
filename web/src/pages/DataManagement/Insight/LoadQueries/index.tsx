@@ -1,5 +1,6 @@
 import { Drawer, Icon, Input, List, Popconfirm, Select, Tag } from "antd";
 import { useMemo, useState } from "react";
+import { formatMessage } from "umi/locale";
 import { IRecord } from "../InsightBar";
 import styles from "./index.less";
 
@@ -32,9 +33,13 @@ export default (props: IProps) => {
 
   return (
     <>
-      <Icon type="folder-open" title="Load Queries" onClick={() => setVisible(true)}/>
+      <Icon
+        type="folder-open"
+        title={formatMessage({ id: "explore.load_queries.title" })}
+        onClick={() => setVisible(true)}
+      />
       <Drawer
-        title="Load Queries"
+        title={formatMessage({ id: "explore.load_queries.title" })}
         placement="right"
         onClose={() => setVisible(false)}
         visible={visible}
@@ -43,7 +48,7 @@ export default (props: IProps) => {
         <div className={styles.list}>
           <div className={styles.filters}>
             <Input.Search
-              placeholder="Please input queries title"
+              placeholder={formatMessage({ id: "explore.load_queries.search.title" })}
               onChange={(e) => {
                 const {value} = e.target;
                 setTimeout(() => {
@@ -53,7 +58,7 @@ export default (props: IProps) => {
               style={{ width: 300, marginRight: 8 }}
             />
             <Select 
-              placeholder="Please select a tag"
+              placeholder={formatMessage({ id: "explore.load_queries.search.tag" })}
               style={{ width: 300 }}
               onChange={value => setSearchTag(value as string)}
               allowClear
@@ -82,21 +87,21 @@ export default (props: IProps) => {
                 actions={[
                   <Popconfirm
                     placement="topRight"
-                    title="Sure to delete?"
+                    title={formatMessage({ id: "app.message.confirm.delete" })}
                     onConfirm={(e) => {
                       e.stopPropagation();
                       item.id && onDelete(item.id)
                     }}
-                    okText="Yes"
-                    cancelText="No"
+                    okText={formatMessage({ id: "form.button.ok" })}
+                    cancelText={formatMessage({ id: "form.button.cancel" })}
                   >
-                    <a key="delete" onClick={(e) => e.stopPropagation()}>delete</a>
+                    <a key="delete" onClick={(e) => e.stopPropagation()}>{formatMessage({ id: "form.button.delete" })}</a>
                   </Popconfirm>,
                 ]}
               >
                 <List.Item.Meta
                   title={item.title}
-                  description={`${item.description}, Updated at ${item.updated}`}
+                  description={`${item.description}, ${formatMessage({ id: "explore.load_queries.updated_at" })} ${item.updated}`}
                 />
                 <div>
                   {(item.tags || []).map((item) => (

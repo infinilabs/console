@@ -24,7 +24,7 @@ import "../list.scss";
 import "@/assets/headercontent.scss";
 import moment from "moment";
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
 
 const EntryList = (props) => {
   const [queryParams, setQueryParams] = React.useState({});
@@ -111,7 +111,7 @@ const EntryList = (props) => {
             </Link>
             <Divider type="vertical" />
             <Popconfirm
-              title="Sure to delete?"
+              title={formatMessage({ id: "app.message.confirm.delete" })}
               onConfirm={() => onDeleteClick(record.id)}
             >
               <a>{formatMessage({ id: "form.button.delete" })}</a>
@@ -169,7 +169,7 @@ const EntryList = (props) => {
           }}
         >
           <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-            <Search
+            <SearchInput
               allowClear
               placeholder="Type keyword to search"
               enterButton="Search"

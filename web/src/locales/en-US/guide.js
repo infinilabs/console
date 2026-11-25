@@ -2,10 +2,40 @@ export default {
   "guide.header.title": "Configuration Guide",
   "guide.initialization.step.configuration": "Configuration",
   "guide.initialization.step.configuration.desc":
-    "Connecting to system cluster (elasticsearch required version 5.3 or above).",
+    "Connecting to system cluster (Easysearch required version 2.3 or above).",
   "guide.initialization.step.initialization": "Initialization",
   "guide.initialization.step.initialization.desc":
     "Initializing basic settings for system indices and templates.",
+  "guide.initialization.start": "Start Initialization",
+  "guide.initialization.defaults.message":
+    "{dataNodes} data nodes detected ({totalNodes} total nodes). Primary shards default to {primaryShards} based on node count.",
+  "guide.initialization.primary_shards": "Primary Shards",
+  "guide.initialization.primary_shards.help":
+    "Defaults to the detected data-node count. In most cases it should match the number of nodes storing the data.",
+  "guide.initialization.primary_shards.invalid":
+    "Please enter a primary shard count greater than 0.",
+  "guide.initialization.auto_expand_replicas": "Auto Expand Replicas",
+  "guide.initialization.auto_expand_replicas.help":
+    "Defaults to 0-1. You can enter false, all, or a range such as 0-1.",
+  "guide.initialization.auto_expand_replicas.invalid":
+    "Invalid auto expand replicas value. Use false, all, or a range such as 0-1.",
+  "guide.initialization.rollup": "Initialize Rollup Templates",
+  "guide.initialization.rollup.help":
+    "Available only on Easysearch 1.12.1 and above. Turn it off to skip rollup template and job initialization.",
+  "guide.initialization.task.template_ilm": "Initialize templates and ILM",
+  "guide.initialization.task.rollup": "Initialize rollup templates",
+  "guide.initialization.task.insight": "Initialize dashboards and visualizations",
+  "guide.initialization.task.alerting": "Initialize built-in alerting rules and channels",
+  "guide.initialization.task.agent": "Initialize agent setup templates",
+  "guide.initialization.task.view": "Initialize data view templates",
+  "guide.initialization.task.start": "Starting: {task}",
+  "guide.initialization.task.success": "Completed: {task}",
+  "guide.initialization.task.failed": "Failed: {task} {reason}",
+  "guide.initialization.task.status.pending": "Pending",
+  "guide.initialization.task.status.running": "Running",
+  "guide.initialization.task.status.success": "Completed",
+  "guide.initialization.task.status.failed": "Failed",
+  "guide.initialization.task.status.skipped": "Skipped",
   "guide.initialization.step.settings": "Settings",
   "guide.initialization.step.settings.desc":
     "Set the default user for login and credential secret.",
@@ -13,23 +43,31 @@ export default {
   "guide.initialization.step.finish.desc": `Configuration completed, Start the journey of ${APP_DOMAIN} Console.`,
   "guide.cluster.host": "Host",
   "guide.cluster.host.required": "Please input host!",
-  "guide.cluster.host.validate": "Please input IP address and port number!",
+  "guide.cluster.host.validate":
+    "Please input a domain name or IP address, with an optional port number!",
   "guide.cluster.auth": "Auth",
   "guide.cluster.test.connection": "Test Connection",
   "guide.cluster.test.connection.error.version":
-    "Elasticsearch required version 5.3 or above.",
+    "Easysearch required version 2.3 or above.",
   "guide.cluster.test.connection.failed": "Cluster connection failed.",
+  "guide.cluster.test.connection.localhost":
+    "The cluster address cannot use localhost. Please enter a remote address that the gateway can access.",
   "guide.cluster.validate.elasticsearch_version_too_old":
-    "Elasticsearch version is too old.",
+    "Easysearch version is too old.",
   "guide.cluster.validate.elasticsearch_indices_exists":
     "Some related indices are already exists in the target cluster.",
   "guide.cluster.validate.elasticsearch_template_exists":
     "Some related templates are already exists in the target cluster.",
   "guide.cluster.validate.default":
-    "Some related data are already exists in the target cluster.",
+    "Existing data was detected in the target cluster.",
+  "guide.cluster.validate.localhost_address":
+    "Localhost addresses cannot be used to register a cluster.",
+  "guide.cluster.validate.localhost.sub":
+    "Change the cluster address to a remote address that the gateway can access, then try again.",
   "guide.cluster.validate.sub":
-    "Perform the following requests in other terminal tools can delete the existing data, but you may lost data.",
-  "guide.cluster.validate.sub.strong": "[DO IT AT YOUR OWN RISK!]",
+    "If you want to continue, run the following requests in another terminal tool to remove the existing data, but data may be lost.",
+  "guide.cluster.validate.sub.strong": "[Please proceed with caution!]",
+  "guide.cluster.validate.refresh": "Recheck",
   "guide.cluster.skip": "Skip",
   "guide.cluster.skip.desc":
     "You can also skip this step and reuse the existing data.",
@@ -47,11 +85,11 @@ export default {
   "guide.confirm.password.validate": "The two passwords that you entered do not match!",
   "guide.password.strength.invalid": "Password does not meet all security requirements.",
   "guide.password.rules.title": "Password must contain",
-  "guide.password.rule.length": "At least 8 characters long",
+  "guide.password.rule.length": "At least 10 characters long",
   "guide.password.rule.uppercase": "At least one uppercase letter (A-Z)",
   "guide.password.rule.lowercase": "At least one lowercase letter (a-z)",
   "guide.password.rule.digit": "At least one number (0-9)",
-  "guide.password.rule.special": "At least one special character",
+  "guide.password.rule.special": "At least one special character (!@#%^&*_+-=?)",
   "guide.credential_secret": "Secret Key",
   "guide.credential_secret.required": "Please input credential secret key!",
   "guide.credential_secret.tips":
@@ -70,9 +108,22 @@ export default {
 
   "guide.completed": "Initialization completed!",
   "guide.enter.console": `Enter ${APP_DOMAIN} Console`,
+  "guide.initialization.finish.pending": "Finishing initialization...",
+  "guide.initialization.finish.pending.desc": "You are on the final step now. You can download the configuration first and enter Console after initialization completes.",
+  "guide.initialization.finish.pending.button": "Initializing",
+  "guide.initialization.finish.failed": "Initialization not completed",
+  "guide.initialization.finish.failed.desc": "Review the error details below, adjust the settings if needed, and try again.",
+  "guide.initialization.finish.error.invalid_bootstrap_password":
+    "The administrator password is invalid. Review the password requirements and try again.",
+  "guide.initialization.finish.error.bootstrap_password_strength":
+    "The administrator password does not meet the security requirements. Update it and try again.",
+  "guide.initialization.finish.error.bootstrap_password_required":
+    "Administrator password is required when resetting the administrator account.",
+  "guide.initialization.finish.error.bootstrap_username_required":
+    "Administrator username is required when resetting the administrator account.",
 
   "health.modal.title": "Services are limited",
-  "health.modal.desc": `Please check the status of the ${APP_DOMAIN} Console related services to ensure that the ${APP_DOMAIN} Console can work correctly.`,
+  "health.modal.desc": `Please click the services health above to ensure the system cluster is running properly.`,
   "health.modal.services.title": "Services Health",
 
   "guide.startup.modal.title": `Welcome to ${APP_DOMAIN} Console`,

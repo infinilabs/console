@@ -141,7 +141,7 @@ export class UrlFormatEditor extends DefaultFormatEditor<
     const width = this.sanitizeNumericValue(this.props.formatParams.width);
     const height = this.sanitizeNumericValue(this.props.formatParams.height);
     return (
-      <Fragment>
+      <Fragment key="widthHeightParameters">
         <EuiFormRow
           label={
             "Width"
@@ -177,7 +177,7 @@ export class UrlFormatEditor extends DefaultFormatEditor<
     const { error, samples, sampleConverterType } = this.state;
 
     return (
-      <Fragment>
+      <Fragment key="urlFormatEditor">
         <LabelTemplateFlyout
           isVisible={this.state.showLabelTemplateHelp}
           onClose={this.hideLabelTemplateHelp}

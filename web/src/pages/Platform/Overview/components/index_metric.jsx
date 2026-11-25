@@ -11,6 +11,62 @@ import Anchor from "@/components/Anchor";
 import MetricChart from "./MetricChart";
 import { createRef, useEffect, useMemo, useState } from "react";
 
+const normalizeIndexSelection = (value, indices = []) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (!value) {
+    return [];
+  }
+  if (typeof value === "string") {
+    return indices.find((item) => item?.index === value) ? indices.filter((item) => item?.index === value) : [{ index: value }];
+  }
+  return [value];
+};
+
+const extractIndexNames = (value) => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === "string" ? item : item?.index))
+      .filter(Boolean);
+  }
+  if (typeof value === "string") {
+    return [value];
+  }
+  if (value?.index) {
+    return [value.index];
+  }
+  return [];
+};
+
+const INDEX_GROUP_FALLBACK_METRICS = {
+  operations: "indexing_rate",
+  latency: "indexing_latency",
+  storage: "index_storage",
+  document: "doc_count",
+  memory: "segment_memory",
+  cache: "query_cache",
+};
+
+const buildChartEntries = (groupKey, metricKeys = []) => {
+  const normalizedMetricKeys = metricKeys.filter(Boolean);
+  const entries = normalizedMetricKeys.map((metricKey, index) => ({
+    metricKey,
+    chartId: `${metricKey}__${index}`,
+  }));
+  if (normalizedMetricKeys.length % 2 === 1 && normalizedMetricKeys.length > 0) {
+    const preferredMetric = INDEX_GROUP_FALLBACK_METRICS[groupKey];
+    const metricKey = normalizedMetricKeys.includes(preferredMetric)
+      ? preferredMetric
+      : normalizedMetricKeys[0];
+    entries.push({
+      metricKey,
+      chartId: `${metricKey}__extra`,
+    });
+  }
+  return entries;
+};
+
 export default (props) => {
 
   const { 
@@ -45,12 +101,11 @@ export default (props) => {
   };
 
   const indexValueChange = (value) => {
-    const indexNames = value.map(item=>item.index);
     setParam((param) => {
       delete param["top"];
       return {
         ...param,
-        index_name: indexNames,
+        index_name: value,
       };
     });
   };
@@ -62,8 +117,9 @@ export default (props) => {
     if (param.top) {
       newParams.top = param.top;
     }
-    if (param.index_name) {
-      newParams.index_name = param.index_name;
+    const indexNames = extractIndexNames(param.index_name);
+    if (indexNames.length > 0) {
+      newParams.index_name = indexNames;
     }
     if (bucketSize) {
       newParams.bucket_size = bucketSize
@@ -79,6 +135,7 @@ export default (props) => {
   const formatedIndices = useMemo(() => {
     return Object.values(indices || []);
   }, [indices]);
+  const selectedIndices = useMemo(() => normalizeIndexSelection(param.index_name, formatedIndices), [param.index_name, formatedIndices]);
 
   const [charts, setCharts] = useState([])
 
@@ -87,8 +144,8 @@ export default (props) => {
       const cs = {}
       metrics.forEach((item) => {
         if (item[1]?.length > 0) {
-          item[1].forEach((metricKey) => {
-            cs[metricKey] = createRef()
+          buildChartEntries(item[0], item[1]).forEach((entry) => {
+            cs[entry.chartId] = createRef()
           })
         }
       })
@@ -123,6 +180,7 @@ export default (props) => {
                   mode="multiple"  
                   placeholder="Select index"
                   allowClear
+                  value={selectedIndices}
                   onChange={indexValueChange}/>
               </div>
             </div>
@@ -135,6 +193,7 @@ export default (props) => {
       <div className="px-box">
         <div className="px">
             {metrics.filter((item) => !!item && !!item[1]).map((item) => {
+              const chartEntries = buildChartEntries(item[0], item[1] || []);
               return (
                 <div key={item[0]} style={{ margin: "8px 0" }}>
                   <MetricContainer
@@ -144,17 +203,17 @@ export default (props) => {
                   >
                     <div className="metric-inner-cnt">
                       {
-                        item[1].map((metricKey) => (
-                          <MetricChart 
-                            key={metricKey} 
-                            instance={charts[metricKey]} 
+                        chartEntries.map((entry) => (
+                          <MetricChart
+                            key={entry.chartId}
+                            instance={charts[entry.chartId]}
                             pointerUpdate={pointerUpdate}
-                            timezone={timezone} 
-                            timeRange={timeRange} 
-                            handleTimeChange={handleTimeChange} 
+                            timezone={timezone}
+                            timeRange={timeRange}
+                            handleTimeChange={handleTimeChange}
                             fetchUrl={`${ESPrefix}/${clusterID}/index_metrics`}
-                            metricKey={metricKey}
-                            title={formatMessage({id: "cluster.metrics.index.axis." + metricKey + ".title"})} 
+                            metricKey={entry.metricKey}
+                            title={formatMessage({id: "cluster.metrics.index.axis." + entry.metricKey + ".title"})}
                             queryParams={queryParams}
                             className={"metric-item"}
                             timeout={timeout}

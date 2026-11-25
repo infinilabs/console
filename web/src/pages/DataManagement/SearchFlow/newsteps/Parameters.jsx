@@ -21,16 +21,16 @@ export default ({ onChange, parameters }) => {
     },
     {
       title: formatMessage({ id: "table.field.actions" }),
-      render: (text, record) => (
-        <div>
-          <Popconfirm
-            title="Sure to delete?"
-            onConfirm={() => handleDeleteClick(record.key)}
-          >
-            <a>Delete</a>
-          </Popconfirm>
-        </div>
-      ),
+        render: (text, record) => (
+          <div>
+            <Popconfirm
+              title={formatMessage({ id: "app.message.confirm.delete" })}
+              onConfirm={() => handleDeleteClick(record.key)}
+            >
+              <a>{formatMessage({ id: "form.button.delete" })}</a>
+            </Popconfirm>
+          </div>
+        ),
     },
   ];
   const handleDeleteClick = (key) => {

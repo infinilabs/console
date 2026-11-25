@@ -25,6 +25,7 @@ import "@/assets/headercontent.scss";
 const { TabPane } = Tabs;
 import User from "../User/index";
 import Role from "../Role/index";
+import Token from "./Token";
 
 const Security = (props) => {
   const [param, setParam] = useQueryParam("_g", JsonParam);
@@ -37,11 +38,23 @@ const Security = (props) => {
             setParam({ ...param, tab: key });
           }}
         >
-          <TabPane tab={<span>User</span>} key="user">
+          <TabPane
+            tab={<span>{formatMessage({ id: "system.security.tab.user" })}</span>}
+            key="user"
+          >
             <User />
           </TabPane>
-          <TabPane tab={<span>Role</span>} key="role">
+          <TabPane
+            tab={<span>{formatMessage({ id: "system.security.tab.role" })}</span>}
+            key="role"
+          >
             <Role />
+          </TabPane>
+          <TabPane
+            tab={<span>{formatMessage({ id: "system.security.tab.token" })}</span>}
+            key="token"
+          >
+            <Token />
           </TabPane>
         </Tabs>
       </Card>

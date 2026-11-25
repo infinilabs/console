@@ -53,7 +53,7 @@ export class StringFormatEditor extends DefaultFormatEditor<StringFormatEditorFo
     const { error, samples } = this.state;
 
     return (
-      <Fragment>
+      <Fragment key="stringFormatEditor">
         <EuiFormRow
           label={
             "Transform"

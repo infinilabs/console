@@ -4,6 +4,7 @@ import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import {Steps, Card, Form, Select, Input,Button, Divider,message, InputNumber} from 'antd';
 import InputSelect from '@/components/infini/InputSelect';
 import {getFields} from '@/lib/elasticsearch/util';
+import { formatMessage } from 'umi/locale';
 
 const {Step} = Steps;
 const {Option} = Select;
@@ -16,6 +17,20 @@ const {TextArea} = Input;
 class Rebuild extends Component {
   state = {
    selectedSourceIndex: ''
+  }
+  validateTargetIndexName = (_, value, callback) => {
+    if (!value) {
+      callback();
+      return;
+    }
+    const normalized = value.trim();
+    const invalidPattern = /[A-Z\\/*?"<>|,#\s:]/;
+    const validPattern = /^(?![._+-])(?!\.{1,2}$)[a-z0-9._+-]+$/;
+    if (normalized !== normalized.toLowerCase() || invalidPattern.test(normalized) || !validPattern.test(normalized)) {
+      callback(formatMessage({ id: 'synchronize.rebuild.target_index.invalid' }));
+      return;
+    }
+    callback();
   }
   componentDidMount(){
     const {dispatch} = this.props;
@@ -165,12 +180,15 @@ class Rebuild extends Component {
           stepDom = (
             <div style={{marginTop:20}}>
               <span style={{height:1}}/>
-              <Form.Item {...formItemLayout}  label="目标索引名">
+              <Form.Item {...formItemLayout}  label={formatMessage({ id: 'synchronize.rebuild.target_index.label' })}>
                 {getFieldDecorator('dest_index', {
                   initialValue: configData.dest.index || '',
-                  rules: [{ required: true, message: '请输入目标索引名称' }],
+                  rules: [
+                    { required: true, message: formatMessage({ id: 'synchronize.rebuild.target_index.required' }) },
+                    { validator: this.validateTargetIndexName },
+                  ],
                 })(
-                  <InputSelect data={indices} style={{width: 200}}/>
+                  <InputSelect data={indices} style={{width: 200}} />
                 )}
               </Form.Item>
               <Form.Item {...formItemLayout} label="Pipeline">

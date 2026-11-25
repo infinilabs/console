@@ -64,6 +64,12 @@ import styles from './complex_field_editor.less'
 import { generate20BitUUID } from '@/utils/utils';
 import { Tags } from './field_editor';
 
+const i18nText = (
+  id: string,
+  defaultMessage: string,
+  values?: Record<string, unknown>
+) => formatMessage({ id, defaultMessage }, values);
+
 const getFieldTypeFormatsList = (
   field: IndexPatternField['spec'],
   defaultFieldFormat: FieldFormatInstanceType,
@@ -80,7 +86,10 @@ const getFieldTypeFormatsList = (
     {
       id: '',
       defaultFieldFormat,
-      title: '- Default -',
+      title: i18nText(
+        "explore.view.index_pattern.field_editor.default_option",
+        "- Default -"
+      ),
     },
     ...formatsByType,
   ];
@@ -212,26 +221,36 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
 
     return isCreating ? (
       <EuiFormRow
-        label={'Name'}
+        label={i18nText("explore.view.index_pattern.complex_field_editor.name", "Name")}
         helpText={
           this.isDuplicateName() ? (
             <span>
               <EuiIcon type="alert" color="warning" size="s" />
               &nbsp;
-              You already have a field with the name <EuiCode>{spec.name}</EuiCode>.
+              {i18nText(
+                "explore.view.index_pattern.complex_field_editor.duplicate_name",
+                "You already have a field with the name {name}.",
+                { name: spec.name }
+              )}
             </span>
           ) : null
         }
         isInvalid={isInvalid}
         error={
           isInvalid
-            ? 'Name is required'
+            ? i18nText(
+                "explore.view.index_pattern.complex_field_editor.name_required",
+                "Name is required"
+              )
             : null
         }
       >
         <EuiFieldText
           value={spec.name || ''}
-          placeholder={'New field'}
+          placeholder={i18nText(
+            "explore.view.index_pattern.complex_field_editor.new_field_placeholder",
+            "New field"
+          )}
           data-test-subj="editorFieldName"
           onChange={(e) => {
             this.onFieldChange('name', e.target.value);
@@ -248,18 +267,22 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
     const defaultFormat = (fieldTypeFormats[0] as InitialFieldTypeFormat).defaultFieldFormat.title;
 
     const label = defaultFormat ? (<>
-      Format (Default: <EuiCode>{defaultFormat}</EuiCode>)</>
+      {i18nText("explore.view.index_pattern.field_editor.format", "Format")} (
+      {i18nText("explore.view.index_pattern.field_editor.default_label", "Default")}: <EuiCode>{defaultFormat}</EuiCode>)
+    </>
     ) : (
-      "Format"
+      i18nText("explore.view.index_pattern.field_editor.format", "Format")
     );
 
     return (
-      <Fragment>
+      <Fragment key="formatSection">
         <EuiFormRow
           label={label}
           helpText={
-            `Formatting allows you to control the way that specific values are displayed. It can also cause values to be
-              completely changed and prevent highlighting in Discover from working.`
+            i18nText(
+              "explore.view.index_pattern.field_editor.format_help",
+              "Formatting allows you to control the way that specific values are displayed. It can also cause values to be completely changed and prevent highlighting in Discover from working."
+            )
           }
         >
           <EuiSelect
@@ -294,24 +317,28 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
     return this.state.showDeleteModal ? (
       <EuiOverlayMask>
         <EuiConfirmModal
-          title={ `Delete field '${spec.metric_name }'`}
-          onCancel={this.hideDeleteModal}
-          onConfirm={() => {
-            this.hideDeleteModal();
-            this.deleteField();
-          }}
-          cancelButtonText='Cancel'
-          confirmButtonText= 'Delete'
-          buttonColor="danger"
-          defaultFocusedButton={EUI_MODAL_CONFIRM_BUTTON}
-        >
-          <p>
-            You can't recover a deleted field. <span>
-                    <br />
-                    <br />
-                  </span>Are you sure you want to do this?
-          </p>
-        </EuiConfirmModal>
+        title={i18nText(
+          "explore.view.index_pattern.complex_field_editor.delete_title",
+          "Delete field '{name}'",
+          { name: spec.metric_name || spec.name }
+        )}
+        onCancel={this.hideDeleteModal}
+        onConfirm={() => {
+          this.hideDeleteModal();
+          this.deleteField();
+        }}
+        cancelButtonText={i18nText("form.button.cancel", "Cancel")}
+        confirmButtonText={i18nText("form.button.delete", "Delete")}
+        buttonColor="danger"
+        defaultFocusedButton={EUI_MODAL_CONFIRM_BUTTON}
+      >
+        <p>
+          {i18nText(
+            "explore.view.index_pattern.complex_field_editor.delete_confirm",
+            "You can't recover a deleted field. Are you sure you want to do this?"
+          )}
+        </p>
+      </EuiConfirmModal>
       </EuiOverlayMask>
     ) : null;
   };
@@ -348,15 +375,15 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
               data-test-subj="fieldSaveButton"
             >
               {isCreating ? (
-                "Create field"
+                i18nText("explore.view.index_pattern.create_field", "Create field")
               ) : (
-                "Save field"
+                i18nText("explore.view.index_pattern.field_editor.save_field", "Save field")
               )}
             </EuiButton>
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
             <EuiButtonEmpty onClick={redirectAway} data-test-subj="fieldCancelButton">
-              Cancel
+              {i18nText("form.button.cancel", "Cancel")}
             </EuiButtonEmpty>
           </EuiFlexItem>
           {!isCreating ? (
@@ -364,7 +391,7 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
               <EuiFlexGroup justifyContent="flexEnd">
                 <EuiFlexItem grow={false}>
                   <EuiButtonEmpty color="danger" onClick={this.showDeleteModal}>
-                    Delete
+                    {i18nText("form.button.delete", "Delete")}
                   </EuiButtonEmpty>
                 </EuiFlexItem>
               </EuiFlexGroup>
@@ -476,7 +503,10 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
     return (
       <>
         <EuiFormRow
-          label={'Metric Name'}
+          label={i18nText(
+            "explore.view.index_pattern.complex_field_editor.metric_name",
+            "Metric Name"
+          )}
         >
           <EuiFieldText
             value={spec?.metric_name}
@@ -486,7 +516,10 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
           />
         </EuiFormRow>
         <EuiFormRow
-          label={'Function'}
+          label={i18nText(
+            "explore.view.index_pattern.complex_field_editor.function",
+            "Function"
+          )}
         >
           <EuiSelect
             options={[
@@ -505,7 +538,10 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
         {this.renderFunction(statistic || 'rate')}
         {this.renderFormat()}
         <EuiFormRow
-          label={'Unit'}
+          label={i18nText(
+            "explore.view.index_pattern.complex_field_editor.unit",
+            "Unit"
+          )}
         >
           <EuiFieldText
             value={spec?.unit}
@@ -515,7 +551,10 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
           />
         </EuiFormRow>
         <EuiFormRow
-          label={'Tags'}
+          label={i18nText(
+            "explore.view.index_pattern.complex_field_editor.tags",
+            "Tags"
+          )}
         >
           <Tags value={spec?.tags} onChange={(value) => {
             this.onFieldChange('tags', value)
@@ -533,9 +572,13 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
         <EuiText>
           <h3>
             {isCreating ? (
-              "Create field"
+              i18nText("explore.view.index_pattern.create_field", "Create field")
             ) : (
-              `Edit ${spec.metric_name }`
+              i18nText(
+                "explore.view.index_pattern.complex_field_editor.edit_title",
+                "Edit {name}",
+                { name: spec.metric_name || spec.name }
+              )
             )}
           </h3>
         </EuiText>

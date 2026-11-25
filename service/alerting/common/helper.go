@@ -30,10 +30,14 @@ package common
 import (
 	"bytes"
 	"fmt"
+	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/service/alerting/action"
 	"infini.sh/console/service/alerting/funcs"
 	"infini.sh/framework/core/orm"
+	"infini.sh/framework/core/util"
+	"net/url"
+	"strings"
 	"text/template"
 )
 
@@ -58,19 +62,34 @@ func PerformChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]by
 		if err != nil {
 			return nil, err, message
 		}
-		wh.URL = string(urlBytes)
+		wh.URL, err = validateRenderedWebhookURL(string(urlBytes))
+		if err != nil {
+			return nil, err, message
+		}
 		act = &action.WebhookAction{
 			Data:    &wh,
 			Message: string(message),
 		}
 	case alerting.ChannelEmail:
-		message, err = ResolveMessage(channel.Email.Body, ctx)
+		if channel.Email == nil {
+			return nil, fmt.Errorf("empty email channel config"), nil
+		}
+		emailCtx := buildEmailTemplateContext(ctx)
+		message, err = ResolveMessage(channel.Email.Body, emailCtx)
 		if err != nil {
 			return nil, err, message
 		}
 		subjectBytes, err := ResolveMessage(channel.Email.Subject, ctx)
 		if err != nil {
 			return nil, err, nil
+		}
+		err = ensureEmailServerID(channel.Email)
+		if err != nil {
+			return nil, err, message
+		}
+		err = ensureEmailRecipients(channel.Email)
+		if err != nil {
+			return nil, err, message
 		}
 		act = &action.EmailAction{
 			Data:    channel.Email,
@@ -82,6 +101,43 @@ func PerformChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]by
 	}
 	executeResult, err := act.Execute()
 	return executeResult, err, message
+}
+
+func buildEmailTemplateContext(ctx map[string]interface{}) map[string]interface{} {
+	if ctx == nil {
+		return nil
+	}
+	emailCtx := make(map[string]interface{}, len(ctx))
+	for k, v := range ctx {
+		emailCtx[k] = v
+	}
+	for _, key := range []string{"message", "recovery_context"} {
+		value, ok := emailCtx[key].(string)
+		if !ok || value == "" {
+			continue
+		}
+		value = strings.ReplaceAll(value, "\r\n", "\n")
+		emailCtx[key] = strings.ReplaceAll(value, "\n", "<br/>")
+	}
+	return emailCtx
+}
+
+func validateRenderedWebhookURL(raw string) (string, error) {
+	rendered := strings.TrimSpace(raw)
+	if rendered == "" || rendered == "<no value>" {
+		return "", fmt.Errorf("invalid webhook url: rendered value is empty")
+	}
+	parsed, err := url.Parse(rendered)
+	if err != nil {
+		return "", fmt.Errorf("invalid webhook url: %w", err)
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return "", fmt.Errorf("invalid webhook url: unsupported scheme %q", parsed.Scheme)
+	}
+	if parsed.Host == "" {
+		return "", fmt.Errorf("invalid webhook url: missing host")
+	}
+	return rendered, nil
 }
 
 func ResolveMessage(messageTemplate string, ctx map[string]interface{}) ([]byte, error) {
@@ -102,7 +158,7 @@ func RetrieveChannel(ch *alerting.Channel, raiseChannelEnabledErr bool) (*alerti
 	if ch.ID != "" {
 		refCh := &alerting.Channel{}
 		refCh.ID = ch.ID
-		_, err := orm.Get(refCh)
+		_, err := orm.GetV2(orm.NewContext(), refCh)
 		if err != nil {
 			return nil, err
 		}
@@ -133,4 +189,67 @@ func RetrieveChannel(ch *alerting.Channel, raiseChannelEnabledErr bool) (*alerti
 		}
 	}
 	return ch, nil
+}
+
+func ensureEmailServerID(email *alerting.Email) error {
+	if email == nil {
+		return fmt.Errorf("empty email channel config")
+	}
+	if email.ServerID != "" {
+		return nil
+	}
+	serverID, err := getFallbackEmailServerID()
+	if err != nil {
+		return err
+	}
+	email.ServerID = serverID
+	return nil
+}
+
+func ensureEmailRecipients(email *alerting.Email) error {
+	if email == nil {
+		return fmt.Errorf("empty email channel config")
+	}
+	if len(email.Recipients.To) == 0 {
+		return fmt.Errorf("email channel recipients are empty, please configure at least one recipient")
+	}
+	return nil
+}
+
+func getFallbackEmailServerID() (string, error) {
+	servers, err := getEnabledEmailServers()
+	if err != nil {
+		return "", err
+	}
+	return selectFallbackEmailServerID(servers)
+}
+
+func selectFallbackEmailServerID(servers []model.EmailServer) (string, error) {
+	switch len(servers) {
+	case 0:
+		return "", fmt.Errorf("parameter server_id must not be empty and no enabled smtp server is available")
+	case 1:
+		return servers[0].ID, nil
+	default:
+		return "", fmt.Errorf("parameter server_id must not be empty and multiple enabled smtp servers were found")
+	}
+}
+
+func getEnabledEmailServers() ([]model.EmailServer, error) {
+	q := &orm.Query{
+		Size: 100,
+	}
+	q.Conds = orm.And(orm.Eq("enabled", true))
+	err, result := orm.Search(model.EmailServer{}, q)
+	if err != nil {
+		return nil, err
+	}
+	servers := make([]model.EmailServer, 0, len(result.Result))
+	for _, row := range result.Result {
+		server := model.EmailServer{}
+		buf := util.MustToJSONBytes(row)
+		util.MustFromJSONBytes(buf, &server)
+		servers = append(servers, server)
+	}
+	return servers, nil
 }

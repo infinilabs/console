@@ -34,22 +34,50 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
+	"strings"
 	"time"
 )
+
+const kueryWildcardSymbol = "@kuery-wildcard@"
+
+func escapeSuggestionQuery(query string) string {
+	replacer := strings.NewReplacer(
+		".", "\\.",
+		"?", "\\?",
+		"+", "\\+",
+		"*", "\\*",
+		"|", "\\|",
+		"{", "\\{",
+		"}", "\\}",
+		"[", "\\[",
+		"]", "\\]",
+		"(", "\\(",
+		")", "\\)",
+		"\"", "\\\"",
+		"\\", "\\\\",
+		"#", "\\#",
+		"@", "\\@",
+		"&", "\\&",
+		"<", "\\<",
+		">", "\\>",
+		"~", "\\~",
+	)
+	return replacer.Replace(query)
+}
 
 func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	targetClusterID := ps.ByName("id")
 	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleEseSearchAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if !exists {
 		errStr := fmt.Sprintf("cluster [%s] not found", targetClusterID)
-		log.Error(errStr)
+		log.Errorf("HandleEseSearchAction failed: %v", errStr)
 		h.WriteError(w, errStr, http.StatusNotFound)
 		return
 	}
@@ -62,14 +90,15 @@ func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Requ
 
 	err = h.DecodeJSON(req, &reqParams)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleEseSearchAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	sanitizeAutoRangeInMap(reqParams.Body)
 	//validate index search api permission
 	reqUser, err := security.FromUserContext(req.Context())
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleEseSearchAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -82,7 +111,7 @@ func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Requ
 
 	err = security.ValidateIndex(indexReq, newRole)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleEseSearchAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -121,7 +150,7 @@ func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Requ
 		vr, err := util.VersionCompare(ver.Number, "7.2")
 		if err != nil {
 			errStr := fmt.Sprintf("version compare error: %v", err)
-			log.Error(errStr)
+			log.Errorf("HandleEseSearchAction failed: %v", errStr)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -207,13 +236,102 @@ func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Requ
 	h.Write(w, searchRes.RawResult.Body)
 }
 
+func sanitizeAutoRangeInMap(data map[string]interface{}) bool {
+	if data == nil {
+		return false
+	}
+	changed := false
+	for key, val := range data {
+		switch typed := val.(type) {
+		case map[string]interface{}:
+			if key == "range" {
+				if sanitizeAutoRangeNode(typed) {
+					changed = true
+				}
+				if len(typed) == 0 {
+					delete(data, key)
+					changed = true
+				}
+				continue
+			}
+			if sanitizeAutoRangeInMap(typed) {
+				changed = true
+			}
+			if len(typed) == 0 {
+				delete(data, key)
+				changed = true
+			}
+		case []interface{}:
+			newList := make([]interface{}, 0, len(typed))
+			listChanged := false
+			for _, item := range typed {
+				if itemMap, ok := item.(map[string]interface{}); ok {
+					if sanitizeAutoRangeInMap(itemMap) {
+						listChanged = true
+					}
+					if len(itemMap) == 0 {
+						listChanged = true
+						continue
+					}
+					newList = append(newList, itemMap)
+					continue
+				}
+				newList = append(newList, item)
+			}
+			if listChanged {
+				data[key] = newList
+				changed = true
+			}
+		}
+	}
+	return changed
+}
+
+func sanitizeAutoRangeNode(rangeNode map[string]interface{}) bool {
+	changed := false
+	for field, condVal := range rangeNode {
+		cond, ok := condVal.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		for _, boundKey := range []string{"gte", "lte", "gt", "lt", "from", "to"} {
+			if isAutoRangeValue(cond[boundKey]) {
+				delete(cond, boundKey)
+				changed = true
+			}
+		}
+		if !hasRangeBounds(cond) {
+			delete(cond, "format")
+		}
+		if len(cond) == 0 || !hasRangeBounds(cond) {
+			delete(rangeNode, field)
+			changed = true
+		}
+	}
+	return changed
+}
+
+func hasRangeBounds(rangeCond map[string]interface{}) bool {
+	for _, key := range []string{"gte", "lte", "gt", "lt", "from", "to"} {
+		if _, ok := rangeCond[key]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func isAutoRangeValue(value interface{}) bool {
+	v, ok := value.(string)
+	return ok && strings.EqualFold(strings.TrimSpace(v), "auto")
+}
+
 func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
 	targetClusterID := ps.ByName("id")
 	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleValueSuggestionAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -226,21 +344,34 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 	}
 
 	var reqParams = struct {
-		BoolFilter interface{} `json:"boolFilter"`
-		FieldName  string      `json:"field"`
-		Query      string      `json:"query"`
+		BoolFilter    interface{} `json:"boolFilter"`
+		BoolFilterAlt interface{} `json:"bool_filter"`
+		FieldName     string      `json:"field"`
+		Query         string      `json:"query"`
 	}{}
 	err = h.DecodeJSON(req, &reqParams)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleValueSuggestionAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	indexName := ps.ByName("index")
-	boolQ := util.MapStr{
-		"filter": reqParams.BoolFilter,
+	boolFilter := reqParams.BoolFilter
+	if boolFilter == nil {
+		boolFilter = reqParams.BoolFilterAlt
+	}
+	if boolFilter == nil {
+		boolFilter = []interface{}{}
 	}
 	var values = []interface{}{}
+	query := strings.TrimSpace(reqParams.Query)
+	if query == "" || query == kueryWildcardSymbol || reqParams.FieldName == "" {
+		h.WriteJSON(w, values, http.StatusOK)
+		return
+	}
+	boolQ := util.MapStr{
+		"filter": boolFilter,
+	}
 	indices, hasAll := h.GetAllowedIndices(req, targetClusterID)
 	if !hasAll {
 		if len(indices) == 0 {
@@ -255,19 +386,22 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 			},
 		}
 	}
+	termsAgg := util.MapStr{
+		"field":          reqParams.FieldName,
+		"include":        escapeSuggestionQuery(query) + ".*",
+		"execution_hint": "map",
+		"shard_size":     10,
+	}
 	queryBody := util.MapStr{
-		"size": 0,
+		"size":            0,
+		"timeout":         "1500ms",
+		"terminate_after": 10000,
 		"query": util.MapStr{
 			"bool": boolQ,
 		},
 		"aggs": util.MapStr{
 			"suggestions": util.MapStr{
-				"terms": util.MapStr{
-					"field":          reqParams.FieldName,
-					"include":        reqParams.Query + ".*",
-					"execution_hint": "map",
-					"shard_size":     10,
-				},
+				"terms": termsAgg,
 			},
 		},
 	}
@@ -275,12 +409,17 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 
 	searchRes, err := client.SearchWithRawQueryDSL(indexName, queryBodyBytes)
 	if err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Warnf("HandleValueSuggestionAction fallback to empty suggestions: %v", err)
+		h.WriteJSON(w, values, http.StatusOK)
 		return
 	}
 
-	for _, bucket := range searchRes.Aggregations["suggestions"].Buckets {
+	suggestionAgg, ok := searchRes.Aggregations["suggestions"]
+	if !ok {
+		h.WriteJSON(w, values, http.StatusOK)
+		return
+	}
+	for _, bucket := range suggestionAgg.Buckets {
 		values = append(values, bucket["key"])
 	}
 	h.WriteJSON(w, values, http.StatusOK)
@@ -294,7 +433,7 @@ func (h *APIHandler) HandleTraceIDSearchAction(w http.ResponseWriter, req *http.
 	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleTraceIDSearchAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -324,7 +463,7 @@ func (h *APIHandler) HandleTraceIDSearchAction(w http.ResponseWriter, req *http.
 	}
 	searchRes, err := client.SearchWithRawQueryDSL(traceIndex, util.MustToJSONBytes(queryDSL))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleTraceIDSearchAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

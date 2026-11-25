@@ -33,6 +33,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
@@ -45,6 +46,22 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 )
+
+const (
+	emailServerTestErrorKeyAuthRequired   = "settings.email.server.message.test.error.auth_required"
+	emailServerTestErrorKeySMTPAuthFailed = "settings.email.server.message.test.error.smtp_auth_failed"
+	emailServerTestErrorKeySenderMismatch = "settings.email.server.message.test.error.sender_mismatch"
+	emailServerTestErrorKeyTLSRequired    = "settings.email.server.message.test.error.tls_required"
+	emailServerTestErrorKeySendFailed     = "settings.email.server.message.test.error.send_failed"
+)
+
+func newEmailTLSConfig(serverName string, minVersion uint16) *tls.Config {
+	return &tls.Config{
+		InsecureSkipVerify: true,
+		MinVersion:         minVersion,
+		ServerName:         serverName,
+	}
+}
 
 func (h *EmailAPI) createEmailServer(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var obj = &model.EmailServer{}
@@ -140,7 +157,7 @@ func saveBasicAuthToCredential(srv *model.EmailServer) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	err = orm.Create(nil, &cred)
+	err = orm.Create(orm.NewContext(), &cred)
 	if err != nil {
 		return "", err
 	}
@@ -153,7 +170,7 @@ func (h *EmailAPI) getEmailServer(w http.ResponseWriter, req *http.Request, ps h
 	obj := model.EmailServer{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":   id,
@@ -175,7 +192,7 @@ func (h *EmailAPI) updateEmailServer(w http.ResponseWriter, req *http.Request, p
 	obj := model.EmailServer{}
 
 	obj.ID = id
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,
@@ -236,7 +253,7 @@ func (h *EmailAPI) deleteEmailServer(w http.ResponseWriter, req *http.Request, p
 	obj := model.EmailServer{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,
@@ -370,11 +387,12 @@ func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps 
 		reqBody.Auth = &auth
 	}
 	if reqBody.Auth == nil {
-		h.WriteError(w, "auth info required", http.StatusInternalServerError)
+		h.writeEmailServerTestError(w, emailServerTestErrorKeyAuthRequired, "auth info required", http.StatusInternalServerError)
 		return
 	}
+	sender := common.ResolveSender(reqBody.Sender, reqBody.Auth.Username)
 	message := gomail.NewMessage()
-	message.SetHeader("From", reqBody.Auth.Username)
+	message.SetHeader("From", sender)
 	message.SetHeader("To", reqBody.SendTo...)
 	message.SetHeader("Subject", "INFINI platform test email")
 
@@ -384,14 +402,88 @@ func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps 
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	err = d.DialAndSend(message)
 	if err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		key, reason := classifyEmailServerTestSendError(&reqBody.EmailServer, sender, err)
+		log.Errorf(
+			"email server test send failed, host=%s, port=%d, tls=%v, tls_min_version=%s, sender=%s, error_key=%s, reason=%s, err=%v",
+			reqBody.Host,
+			reqBody.Port,
+			reqBody.TLS,
+			reqBody.TLSMinVersion,
+			sender,
+			key,
+			reason,
+			err,
+		)
+		h.writeEmailServerTestError(w, key, reason, http.StatusInternalServerError)
 		return
 	}
 	h.WriteAckOKJSON(w)
+}
+
+func (h *EmailAPI) writeEmailServerTestError(w http.ResponseWriter, key, reason string, statusCode int) {
+	payload := util.MapStr{
+		"status": statusCode,
+		"error": util.MapStr{
+			"reason": reason,
+		},
+	}
+	if key != "" {
+		payload["error"].(util.MapStr)["key"] = key
+	}
+	h.WriteJSON(w, payload, statusCode)
+}
+
+func classifyEmailServerTestSendError(server *model.EmailServer, sender string, err error) (string, string) {
+	if err == nil {
+		return "", ""
+	}
+
+	rawReason := strings.TrimSpace(err.Error())
+	normalizedReason := strings.ToLower(rawReason)
+
+	if isSMTPAuthenticationError(normalizedReason) {
+		authUsername := ""
+		if server != nil && server.Auth != nil {
+			authUsername = strings.TrimSpace(server.Auth.Username)
+		}
+		if authUsername != "" && sender != "" && !strings.EqualFold(strings.TrimSpace(sender), authUsername) {
+			return emailServerTestErrorKeySenderMismatch, "SMTP authentication failed; some providers require the sender address to match the authenticated account or an approved alias"
+		}
+		return emailServerTestErrorKeySMTPAuthFailed, "SMTP authentication failed; verify the username, password, or provider authorization code"
+	}
+
+	if strings.Contains(normalizedReason, "must issue a starttls command first") {
+		return emailServerTestErrorKeyTLSRequired, "SMTP server requires TLS or STARTTLS before authentication"
+	}
+
+	if strings.Contains(normalizedReason, "could not send email") {
+		return emailServerTestErrorKeySendFailed, "SMTP server rejected the test email; verify the sender, recipient, and provider restrictions"
+	}
+
+	return emailServerTestErrorKeySendFailed, "Unable to send test email; verify the SMTP server address, port, TLS settings, and provider restrictions"
+}
+
+func isSMTPAuthenticationError(reason string) bool {
+	reason = strings.TrimSpace(strings.ToLower(reason))
+	if reason == "" {
+		return false
+	}
+	authIndicators := []string{
+		"authentication is required",
+		"authentication failed",
+		"auth failed",
+		"535",
+		"invalid login",
+		"invalid credentials",
+	}
+	for _, indicator := range authIndicators {
+		if strings.Contains(reason, indicator) {
+			return true
+		}
+	}
+	return false
 }
 
 // newEmailTestDialer keeps Console on the standard gopkg.in/gomail.v2 module.
@@ -411,7 +503,7 @@ func newEmailTestDialer(server *model.EmailServer) (*gomail.Dialer, error) {
 	}
 
 	dialer := gomail.NewDialer(server.Host, server.Port, server.Auth.Username, server.Auth.Password.Get())
-	dialer.TLSConfig = &tls.Config{InsecureSkipVerify: true, MinVersion: tlsMinVersion}
+	dialer.TLSConfig = newEmailTLSConfig(server.Host, tlsMinVersion)
 	dialer.SSL = server.TLS
 
 	return dialer, nil

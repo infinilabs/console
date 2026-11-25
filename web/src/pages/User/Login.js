@@ -3,7 +3,10 @@ import { connect } from "dva";
 import { formatMessage, FormattedMessage } from "umi/locale";
 import Link from "umi/link";
 import { Checkbox, Alert, Icon,Button } from "antd";
+import router from "umi/router";
 import Login from "@/components/Login";
+import { refreshApplicationSettings } from "@/utils/authority";
+import { getSetupRequired, setSetupRequired } from "@/utils/setup";
 import styles from "./Login.less";
 import "./LoginPage.scss";
 
@@ -17,6 +20,33 @@ class LoginPage extends Component {
   state = {
     type: "account",
     autoLogin: true,
+    ssoProviders: [],
+  };
+
+  componentDidMount() {
+    if (getSetupRequired() === "true") {
+      router.replace("/guide/initialization");
+      return;
+    }
+
+    this.syncSetupState();
+  }
+
+  syncSetupState = async () => {
+    try {
+      const res = await refreshApplicationSettings();
+      setSetupRequired(`${!!res?.setup_required}`);
+      const oauthProviders = res?.security?.auth?.oauth || {};
+      const ssoProviders = Object.keys(oauthProviders)
+        .map((key) => oauthProviders[key])
+        .filter((item) => !!item?.url);
+      this.setState({ ssoProviders });
+      if (res?.setup_required) {
+        router.replace("/guide/initialization");
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   onTabChange = (type) => {
@@ -71,7 +101,7 @@ class LoginPage extends Component {
 
   render() {
     const { login, submitting } = this.props;
-    const { type, autoLogin } = this.state;
+    const { type, autoLogin, ssoProviders } = this.state;
     return (
       <div className={`login-wrapper ${styles.main}`}>
         <Login
@@ -90,7 +120,8 @@ class LoginPage extends Component {
               login.type === "account" &&
               !submitting &&
               this.renderMessage(
-                formatMessage({ id: "app.login.message-invalid-credentials" })
+                login.message ||
+                  formatMessage({ id: "app.login.message-invalid-credentials" })
               )}
             <UserName name="userName" placeholder="username" />
             <Password
@@ -120,10 +151,20 @@ class LoginPage extends Component {
           <Submit loading={submitting}>
             <FormattedMessage id="app.login.login" />
           </Submit>
-          {<div className={styles.other}>
-            <FormattedMessage id="app.login.sign-in-with" />
-            <Button type="link" href="/sso/login/"><Icon type="github" className={styles.icon} theme="outlined" /></Button>
-          </div> }
+          {ssoProviders.length > 0 ? (
+            <div className={styles.other}>
+              <FormattedMessage id="app.login.sign-in-with" />
+              {ssoProviders.map((provider, index) => (
+                <Button key={provider.url || index} type="link" href={provider.url}>
+                  <Icon
+                    type={provider.icon || provider.type || "github"}
+                    className={styles.icon}
+                    theme="outlined"
+                  />
+                </Button>
+              ))}
+            </div>
+          ) : null}
         </Login>
       </div>
     );

@@ -12,7 +12,7 @@ After the initial install, it will enter the initialization guide page where you
 
 ## Configuration
 
-Connecting to system cluster (elasticsearch required version 5.3 or above).
+Connecting to system cluster (Easysearch required version 2.3 or above).
 
 {{% load-img "/img/screenshot/initialization/configuration.png" %}}
 

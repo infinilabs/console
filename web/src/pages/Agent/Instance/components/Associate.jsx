@@ -1,10 +1,35 @@
 import { useGlobal } from "@/layouts/GlobalContext";
 import request from "@/utils/request";
-import { Form, Input, Switch, Icon, Button, Select } from "antd";
+import { Form, Input, Switch, Icon, Button, Select, Alert } from "antd";
 import { useMemo, useRef, useState } from "react";
 import { Link, router } from "umi";
 import { formatMessage } from "umi/locale";
 import CredentialForm from "../../../System/Cluster/CredentialForm";
+
+const normalizeLogsPaths = (items = []) =>
+  Array.from(
+    new Set(
+      items
+        .reduce((result, item) => {
+          if (Array.isArray(item)) {
+            return result.concat(item);
+          }
+          result.push(item);
+          return result;
+        }, [])
+        .map((item) => `${item || ""}`.trim())
+        .filter(Boolean)
+    )
+  );
+
+const getDetectedLogsPaths = (data = {}) =>
+  normalizeLogsPaths([
+    data?.logs_paths,
+    data?.path_logs,
+    data?.node_info?.logs_paths,
+    data?.node_info?.path_logs,
+    data?.node_info?.settings?.path?.logs,
+  ]);
 
 export const Associate = Form.create({ name: "associate_form" })((props) => {
   const formItemLayout = {
@@ -150,7 +175,11 @@ export const Associate = Form.create({ name: "associate_form" })((props) => {
                 ],
               })(<Input placeholder="127.0.0.1:9200" />)}
             </Form.Item>
-            <Form.Item label="TLS">
+            <Form.Item
+              label={formatMessage({
+                id: "gateway.instance.field.tls.label",
+              })}
+            >
               {getFieldDecorator("isTLS", {
                 initialValue: record?.schema === "https",
                 valuePropName: "checked",
@@ -183,8 +212,10 @@ export const Associate = Form.create({ name: "associate_form" })((props) => {
               isManual={state.isManual}
             />
             <Form.Item {...tailFormItemLayout}>
-              <Button type="primary" onClick={onConnectClick}>
-                Connect
+              <Button icon="thunderbolt" type="primary" onClick={onConnectClick}>
+                {formatMessage({
+                  id: "cluster.regist.step.connect.title",
+                })}
               </Button>
             </Form.Item>
           </Form>
@@ -196,21 +227,30 @@ export const Associate = Form.create({ name: "associate_form" })((props) => {
 
 const Result = ({ data, onComplete, loading = false }) => {
   const { clusterList = [] } = useGlobal();
-  const clusters = useMemo(
-    () => {
-      if (!data.cluster_info.cluster_uuid) {
-        return [];
-      }
-      return clusterList.filter((item) => {
-        return item.cluster_uuid == data.cluster_info.cluster_uuid;
+  const detectedLogsPaths = useMemo(() => getDetectedLogsPaths(data), [data]);
+  const detectedLogsPath = detectedLogsPaths.join(", ");
+  const clusters = useMemo(() => {
+    const clusterUUID = `${data?.cluster_info?.cluster_uuid || ""}`.trim();
+    if (!clusterUUID) {
+      return [];
+    }
+    const clusterName = `${data?.cluster_info?.cluster_name || ""}`.trim();
+    const toTs = (item) => new Date(item?.updated || item?.created || 0).getTime() || 0;
+    return (clusterList || [])
+      .filter((item) => `${item?.cluster_uuid || ""}`.trim() === clusterUUID)
+      .sort((a, b) => {
+        const aName = `${a?.name || a?.raw_name || ""}`.trim();
+        const bName = `${b?.name || b?.raw_name || ""}`.trim();
+        const aNameMatched = clusterName && aName === clusterName ? 1 : 0;
+        const bNameMatched = clusterName && bName === clusterName ? 1 : 0;
+        if (aNameMatched !== bNameMatched) {
+          return bNameMatched - aNameMatched;
+        }
+        return toTs(b) - toTs(a);
       });
-    },
-    clusterList,
-    data.cluster_info.cluster_uuid
-  );
-  const selectedID = clusters[0]?.id || "";
+  }, [clusterList, data?.cluster_info?.cluster_uuid, data?.cluster_info?.cluster_name]);
+  const selectedID = useMemo(() => clusters[0]?.id || "", [clusters]);
   const clusterRef = useRef();
-
   const onAssociateClick = () => {
     if (typeof onComplete === "function") {
       const clusterID = clusterRef.current.rcSelect.state?.value[0] || "";
@@ -222,7 +262,6 @@ const Result = ({ data, onComplete, loading = false }) => {
         publish_address: data?.node_info?.http?.publish_address,
         node_name: data?.node_info?.name,
         path_home: data?.node_info?.settings?.path?.home,
-        path_logs: data?.node_info?.settings?.path?.logs,
         // credential_id:values.credential_id,
       });
     }
@@ -265,7 +304,7 @@ const Result = ({ data, onComplete, loading = false }) => {
           <div>Node UUID：{data?.id}</div>
           <div>Publish Address：{data?.node_info?.http?.publish_address}</div>
           <div>Path Home：{data?.node_info?.settings?.path?.home}</div>
-          <div>Path Log：{data?.node_info?.settings?.path?.logs}</div>
+          <div>Path Log：{detectedLogsPath}</div>
         </div>
       </div>
       <div>
@@ -317,15 +356,17 @@ const Result = ({ data, onComplete, loading = false }) => {
               </a>
             </span>
           ) : (
-            <span>
-              {formatMessage({
+            <Alert
+              type="success"
+              message={formatMessage({
                 id: "agent.instance.associate.tips.metric",
               })}
-            </span>
+            />
           )}
         </div>
         <Button
           type="primary"
+          icon="link"
           disabled={clusters.length === 0}
           onClick={onAssociateClick}
           loading={loading}

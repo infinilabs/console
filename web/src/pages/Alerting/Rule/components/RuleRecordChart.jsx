@@ -1,4 +1,4 @@
-import { Table, Button, Divider, Tag, Icon } from "antd";
+import { Table, Button, Divider, Tag, Icon, Tooltip, message, Empty } from "antd";
 import {
   Axis,
   Chart,
@@ -26,6 +26,16 @@ import { PriorityColor, RuleStautsColor } from "../../utils/constants";
 import { MonitorDatePicker } from "@/components/infini/MonitorDatePicker";
 import { calculateBounds } from "@/components/vendor/data/common/query/timefilter";
 import metricsStyles from "@/pages/Cluster/Metrics.scss";
+import { CopyToClipboard } from "react-copy-to-clipboard";
+
+const buildCopyRequestText = (requestPayload) => {
+  const index = requestPayload?.index;
+  const query = requestPayload?.query;
+  if (!index || !query) {
+    return "";
+  }
+  return `GET ${index}/_search\n${JSON.stringify(query, null, 2)}`;
+};
 
 const RuleRecordChart = ({ ruleID, timeRange, conditions, clusterID }) => {
   if (!ruleID) {
@@ -41,6 +51,13 @@ const RuleRecordChart = ({ ruleID, timeRange, conditions, clusterID }) => {
   });
 
   const [metricData, setMetricData] = useState({});
+  const [latestRequest, setLatestRequest] = useState("");
+  const hasMetricData = useMemo(() => {
+    if (!Array.isArray(metricData?.lines)) {
+      return false;
+    }
+    return metricData.lines.some((line) => Array.isArray(line?.data) && line.data.length > 0);
+  }, [metricData]);
 
   const [lineAnnotations] = useMemo(() => {
     //LineAnnotation
@@ -74,7 +91,7 @@ const RuleRecordChart = ({ ruleID, timeRange, conditions, clusterID }) => {
     });
 
     const fetchData = async () => {
-      let url = `/alerting/rule/${ruleID}/metric`;
+      let url = `/alerting/rule/${ruleID}/history_metric`;
       const res = await request(url, {
         method: "GET",
         queryParams: {
@@ -84,6 +101,7 @@ const RuleRecordChart = ({ ruleID, timeRange, conditions, clusterID }) => {
       });
       if (res && !res.error) {
         setMetricData(res.metric);
+        setLatestRequest(buildCopyRequestText(res.request));
         if(res.bucket_label && res.bucket_label.enabled === true){
           fetchBucketLabels(res.metric, res.bucket_label.template);
         }
@@ -122,8 +140,26 @@ const RuleRecordChart = ({ ruleID, timeRange, conditions, clusterID }) => {
     }
   };
 
+  if (!hasMetricData) {
+    return (
+      <div
+        className={metricsStyles.vizChartContainer}
+        style={{ border: "none", margin: 0, flex: "1 1 100%" }}
+      >
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description="暂无数据"
+          style={{ padding: 0 }}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className={metricsStyles.vizChartContainer}>
+    <div
+      className={metricsStyles.vizChartContainer}
+      style={{ border: "none", margin: 0, flex: "1 1 100%", position: "relative" }}
+    >
       <Chart size={[, 240]} className={metricsStyles.vizChartItem}>
         <Settings
           debug={false}
@@ -205,6 +241,20 @@ const RuleRecordChart = ({ ruleID, timeRange, conditions, clusterID }) => {
           );
         })}
       </Chart>
+      {latestRequest ? (
+        <div style={{ position: "absolute", right: 8, bottom: 8, zIndex: 1 }}>
+          <CopyToClipboard
+            text={latestRequest}
+            onCopy={() =>
+              message.success(formatMessage({ id: "cluster.metrics.request.copy.success" }))
+            }
+          >
+            <Tooltip title={formatMessage({ id: "cluster.metrics.request.copy" })}>
+              <Icon type="copy" style={{ color: "rgb(0, 127, 255)" }} />
+            </Tooltip>
+          </CopyToClipboard>
+        </div>
+      ) : null}
     </div>
   );
 };

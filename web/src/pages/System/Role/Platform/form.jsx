@@ -6,6 +6,7 @@ import {
   InputNumber,
   Card,
   Button,
+  Result,
   Row,
   Col,
   Transfer,
@@ -19,8 +20,9 @@ import TagEditor from "@/components/infini/TagEditor";
 import Permission from "./permission";
 import ApiPermission from "./api_permission";
 import request from "@/utils/request";
-import { menuData } from "./menu";
+import { getMenuData } from "./menu";
 import { formatMessage } from "umi/locale";
+import { refreshApplicationSettings } from "@/utils/authority";
 
 const formItemLayout = {
   labelCol: {
@@ -47,6 +49,16 @@ const tailFormItemLayout = {
 const PlatformRoleForm = (props) => {
   const { getFieldDecorator } = props.form;
   const [isLoading, setIsLoading] = useState(false);
+  const [menuData, setMenuData] = useState(() => getMenuData());
+  const breadcrumbList = [
+    { title: "home", locale: "menu.home", href: "/" },
+    { title: "system", locale: "menu.system" },
+    { title: "security", locale: "menu.system.security" },
+    {
+      title: props.mode === "edit" ? "edit_role" : "new_role",
+      locale: props.mode === "edit" ? "menu.system.edit_role" : "menu.system.new_role",
+    },
+  ];
 
   const handleSubmit = useCallback(
     (e) => {
@@ -70,8 +82,20 @@ const PlatformRoleForm = (props) => {
 
   const editValue = props.value || {};
 
+  useEffect(() => {
+    let isMounted = true;
+    refreshApplicationSettings().finally(() => {
+      if (isMounted) {
+        setMenuData(getMenuData());
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
-    <PageHeaderWrapper>
+    <PageHeaderWrapper breadcrumbList={breadcrumbList}>
       <Card
         extra={
           <div>
@@ -81,41 +105,90 @@ const PlatformRoleForm = (props) => {
           </div>
         }
       >
-        <Form {...formItemLayout}>
-          <Form.Item label="Name">
-            {getFieldDecorator("name", {
-              initialValue: editValue.name,
-              rules: [
-                {
-                  required: true,
-                  message: "Please input name!",
-                },
-              ],
-            })(<Input disabled={props.mode == "edit"} />)}
-          </Form.Item>
-          <Form.Item label="Feature privileges">
-            {getFieldDecorator("privilege.platform", {
-              initialValue: editValue.privilege?.platform || [],
-              rules: [
-                {
-                  required: true,
-                  message: "Please select platform feature privilege!",
-                },
-              ],
-            })(<Permission data={menuData} />)}
-          </Form.Item>
-          <Form.Item label="Description">
-            {getFieldDecorator("description", {
-              initialValue: editValue.description,
-              rules: [],
-            })(<Input.TextArea />)}
-          </Form.Item>
-          <Form.Item {...tailFormItemLayout}>
-            <Button type="primary" onClick={handleSubmit} loading={isLoading}>
-              Save
-            </Button>
-          </Form.Item>
-        </Form>
+        {props.createResult ? (
+          <Result
+            status="success"
+            title={formatMessage({ id: "system.security.role.create.success" })}
+            extra={[
+              <Button
+                key="view-role-list"
+                onClick={() => {
+                  props.history.push(
+                    `/system/security?_g=${encodeURIComponent(
+                      JSON.stringify({ tab: "role" })
+                    )}`
+                  );
+                }}
+              >
+                {formatMessage({
+                  id: "system.security.role.create.button.view_list",
+                })}
+              </Button>,
+              <Button
+                key="continue-create-role"
+                type="primary"
+                onClick={props.onContinueCreate}
+              >
+                {formatMessage({
+                  id: "system.security.role.create.button.continue",
+                })}
+              </Button>,
+            ]}
+          />
+        ) : (
+          <Form {...formItemLayout}>
+            <Form.Item label={formatMessage({ id: "system.security.role.table.name" })}>
+              {getFieldDecorator("name", {
+                initialValue: editValue.name,
+                rules: [
+                  {
+                    required: true,
+                    message: formatMessage({
+                      id: "system.role.platform.name.required",
+                    }),
+                  },
+                ],
+              })(<Input disabled={props.mode == "edit"} />)}
+            </Form.Item>
+            <Form.Item
+              label={formatMessage({
+                id: "system.role.platform.feature_privilege.label",
+              })}
+            >
+              {getFieldDecorator("privilege.platform", {
+                initialValue: editValue.privilege?.platform || [],
+                rules: [
+                  {
+                    validator: (rule, value, callback) => {
+                      if (Array.isArray(value) && value.length > 0) {
+                        callback();
+                        return;
+                      }
+                      callback(
+                        formatMessage({
+                          id: "system.role.platform.feature_privilege.required",
+                        })
+                      );
+                    },
+                  },
+                ],
+              })(<Permission data={menuData} />)}
+            </Form.Item>
+            <Form.Item
+              label={formatMessage({ id: "system.security.role.table.description" })}
+            >
+              {getFieldDecorator("description", {
+                initialValue: editValue.description,
+                rules: [],
+              })(<Input.TextArea />)}
+            </Form.Item>
+            <Form.Item {...tailFormItemLayout}>
+              <Button type="primary" onClick={handleSubmit} loading={isLoading}>
+                {formatMessage({ id: "form.button.save" })}
+              </Button>
+            </Form.Item>
+          </Form>
+        )}
       </Card>
     </PageHeaderWrapper>
   );

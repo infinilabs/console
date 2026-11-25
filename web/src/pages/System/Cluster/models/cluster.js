@@ -150,8 +150,8 @@ export default {
     },
     *doTryConnect({ payload }, { call, put, select }) {
       let res = yield call(tryConnect, payload);
-      if (res.error) {
-        return false;
+      if (!res || res.error) {
+        return res;
       }
 
       yield put({

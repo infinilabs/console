@@ -43,6 +43,8 @@ export default (props) => {
     hideHeader,
     displayOptions={},
     onResultChange,
+    lockInteractions,
+    autoApplyRangeFilter,
   } = props;
 
   const [cacheRecord, setCacheRecord] = useState(record)
@@ -100,6 +102,130 @@ export default (props) => {
     setCacheRecord(record)
   }
 
+  const parseBucketSize = (bucketSize) => {
+    const matched = `${bucketSize || ""}`.trim().match(/^(\d+)(ms|s|m|h|d|w|M|y)$/);
+    if (!matched) {
+      return null;
+    }
+    const value = parseInt(matched[1], 10);
+    if (!Number.isInteger(value) || value <= 0) {
+      return null;
+    }
+    return {
+      value,
+      unit: matched[2],
+    };
+  }
+
+  const getMomentAddUnit = (unit) => {
+    const unitMap = {
+      ms: "milliseconds",
+      s: "seconds",
+      m: "minutes",
+      h: "hours",
+      d: "days",
+      w: "weeks",
+      M: "months",
+      y: "years",
+    };
+    return unitMap[unit];
+  }
+
+  const floorMomentToBucket = (value, bucketSize) => {
+    const parsedBucket = parseBucketSize(bucketSize);
+    const currentMoment = moment(value);
+    if (!parsedBucket || !currentMoment.isValid()) {
+      return null;
+    }
+    const { value: bucketValue, unit } = parsedBucket;
+    switch (unit) {
+      case "ms":
+        return currentMoment.clone();
+      case "s":
+        return currentMoment.clone().milliseconds(0).seconds(
+          Math.floor(currentMoment.seconds() / bucketValue) * bucketValue
+        );
+      case "m":
+        return currentMoment
+          .clone()
+          .startOf("hour")
+          .add(Math.floor(currentMoment.minutes() / bucketValue) * bucketValue, "minutes");
+      case "h": {
+        // Use UTC to match ES bucket alignment (no time_zone in backend queries)
+        const utcH = moment.utc(value);
+        return moment(
+          utcH.clone().startOf("day")
+            .add(Math.floor(utcH.hours() / bucketValue) * bucketValue, "hours")
+            .valueOf()
+        );
+      }
+      case "d": {
+        const utcD = moment.utc(value);
+        return moment(
+          utcD.clone().startOf("month")
+            .add(Math.floor((utcD.date() - 1) / bucketValue) * bucketValue, "days")
+            .valueOf()
+        );
+      }
+      case "w": {
+        const baseMoment = moment.utc(0).startOf("week");
+        const diff = moment.utc(value).clone().startOf("week").diff(baseMoment, "weeks");
+        return moment(baseMoment.clone().add(Math.floor(diff / bucketValue) * bucketValue, "weeks").valueOf());
+      }
+      case "M": {
+        const utcM = moment.utc(value);
+        return moment(
+          utcM.clone().startOf("year")
+            .add(Math.floor(utcM.month() / bucketValue) * bucketValue, "months")
+            .valueOf()
+        );
+      }
+      case "y": {
+        const baseMoment = moment.utc(0).startOf("year");
+        const diff = moment.utc(value).clone().startOf("year").diff(baseMoment, "years");
+        return moment(baseMoment.clone().add(Math.floor(diff / bucketValue) * bucketValue, "years").valueOf());
+      }
+      default:
+        return null;
+    }
+  }
+
+  const ceilMomentToBucket = (value, bucketSize) => {
+    const parsedBucket = parseBucketSize(bucketSize);
+    const currentMoment = moment(value);
+    const flooredMoment = floorMomentToBucket(value, bucketSize);
+    if (!parsedBucket || !currentMoment.isValid() || !flooredMoment) {
+      return null;
+    }
+    if (currentMoment.valueOf() === flooredMoment.valueOf()) {
+      return flooredMoment.clone();
+    }
+    return flooredMoment.clone().add(parsedBucket.value, getMomentAddUnit(parsedBucket.unit));
+  }
+
+  const alignRangeToBucket = (range, bucketSize) => {
+    const parsedBucket = parseBucketSize(bucketSize);
+    if (!parsedBucket || !range?.from || !range?.to) {
+      return null;
+    }
+    const startMoment = floorMomentToBucket(range.from, bucketSize);
+    let endMoment = ceilMomentToBucket(range.to, bucketSize);
+    const rawEndMoment = moment(range.to);
+    if (!startMoment || !endMoment) {
+      return null;
+    }
+    if (
+      endMoment.valueOf() === startMoment.valueOf() ||
+      (rawEndMoment.isValid() && endMoment.valueOf() === rawEndMoment.valueOf())
+    ) {
+      endMoment = endMoment.clone().add(parsedBucket.value, getMomentAddUnit(parsedBucket.unit));
+    }
+    return {
+      from: startMoment.toISOString(),
+      to: endMoment.clone().subtract(1, "millisecond").toISOString(),
+    };
+  }
+
   const handleZoom = (newZoom) => {
     if (newZoom === 0) {
       setZoom(newZoom)
@@ -144,7 +270,10 @@ export default (props) => {
     if (!params || !params.range) return;
     const { range } = params;
     let newRange = {};
-    if (range.from === range.to) {
+    const alignedRange = alignRangeToBucket(range, fetchParamsCacheRef.current?.bucketSize);
+    if (alignedRange) {
+      newRange = alignedRange;
+    } else if (range.from === range.to) {
       if (fetchParamsCacheRef.current?.bucketSize) {
         let value = parseInt(fetchParamsCacheRef.current?.bucketSize)   
         let unit = (fetchParamsCacheRef.current?.bucketSize).replace(/\d+/gi,"") 
@@ -253,6 +382,8 @@ export default (props) => {
           queriesBarParams={queriesBarParams}
           handleContextMenu={handleContextMenu}
           isFullScreen={isFullScreen}
+          lockInteractions={lockInteractions}
+          autoApplyRangeFilter={autoApplyRangeFilter}
           onResultChange={onResultChange} 
         />
       </Spin>

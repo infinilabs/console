@@ -379,6 +379,37 @@ PUT _template/rollup_policy_template
   }
 }
 
+# ilm settings for index and shard rollup indices, kept longer for capacity planning
+DELETE _ilm/policy/ilm_$[[SETUP_INDEX_PREFIX]]rollup-index-metrics-retention
+PUT _ilm/policy/ilm_$[[SETUP_INDEX_PREFIX]]rollup-index-metrics-retention
+{
+  "policy": {
+    "phases": {
+      "hot": {
+        "min_age": "0ms"
+      },
+      "delete": {
+        "min_age": "$[[SETUP_ROLLUP_INDEX_METRICS_RETENTION]]",
+        "actions": {
+          "delete": {
+            "timestamp_field": "timestamp.date_histogram",
+            "min_data_age": "$[[SETUP_ROLLUP_INDEX_METRICS_RETENTION]]"
+          }
+        }
+      }
+    }
+  }
+}
+
+PUT _template/rollup_index_metrics_policy_template
+{
+  "order": 2,
+  "index_patterns": ["rollup_index_stats*", "rollup_shard_stats_metrics*"],
+  "settings": {
+    "index.lifecycle.name": "ilm_$[[SETUP_INDEX_PREFIX]]rollup-index-metrics-retention"
+  }
+}
+
 
 # start all rollup jobs
 POST /_rollup/jobs/rollup*/_start

@@ -10,6 +10,7 @@ title: "版本历史"
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+- feat: 支持配置索引和分片 rollup 指标的保留时长（`metrics.rollup.index_metrics_retention`，默认 `30d`）
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
 - chore: 为 Console 构建与 PR 检查增加原生 Go Modules 支持

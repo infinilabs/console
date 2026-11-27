@@ -10,6 +10,7 @@ Information about release notes of INFINI Console is provided here.
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+- feat: configurable retention for index and shard rollup metrics (`metrics.rollup.index_metrics_retention`, default `30d`)
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
 - chore: add native Go modules support for Console build and PR checks

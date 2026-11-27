@@ -74,6 +74,8 @@ metrics:
     cluster_stats: true
     node_stats: true
     index_stats: true
+#  rollup:
+#    index_metrics_retention: 30d
 
 ## badger kv storage configuration
 badger:

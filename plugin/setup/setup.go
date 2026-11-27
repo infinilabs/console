@@ -35,6 +35,7 @@ import (
 	"net/http"
 	uri2 "net/url"
 	"path"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -982,6 +983,8 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 			return w.Write([]byte(request.BootstrapUsername))
 		case "SETUP_DOC_TYPE":
 			return w.Write([]byte(docType))
+		case "SETUP_ROLLUP_INDEX_METRICS_RETENTION":
+			return w.Write([]byte(getRollupIndexMetricsRetention()))
 		}
 		//ignore unresolved variable
 		return w.Write([]byte("$[[" + tag + "]]"))
@@ -1061,4 +1064,31 @@ func initIngestUser(client elastic.API, indexPrefix string, username, password s
 		return fmt.Errorf("failed to create ingest user: %w", err)
 	}
 	return nil
+}
+
+const defaultRollupIndexMetricsRetention = "30d"
+
+var rollupRetentionPattern = regexp.MustCompile(`^[1-9][0-9]*[dh]$`)
+
+func getRollupIndexMetricsRetention() string {
+	cfg := struct {
+		IndexMetricsRetention string `config:"index_metrics_retention"`
+	}{IndexMetricsRetention: defaultRollupIndexMetricsRetention}
+	_, err := env.ParseConfig("metrics.rollup", &cfg)
+	if err != nil {
+		log.Warnf("failed to parse metrics.rollup config, using default retention [%s]: %v", defaultRollupIndexMetricsRetention, err)
+		return defaultRollupIndexMetricsRetention
+	}
+	return normalizeRollupRetention(cfg.IndexMetricsRetention)
+}
+
+func normalizeRollupRetention(retention string) string {
+	retention = strings.TrimSpace(retention)
+	if !rollupRetentionPattern.MatchString(retention) {
+		if retention != "" {
+			log.Warnf("invalid metrics.rollup.index_metrics_retention [%s], using default [%s]", retention, defaultRollupIndexMetricsRetention)
+		}
+		return defaultRollupIndexMetricsRetention
+	}
+	return retention
 }
